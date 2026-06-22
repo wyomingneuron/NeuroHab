@@ -1,6 +1,7 @@
 # QUICK START GUIDE
 This README contains the documentation for setup, addresses FAQ's, hardware installation, calibration, and more. Generally after a new problem is solved it is documented here.<br>
 Check for solutions here and if this README does not solve your problem email me, Samuel Crouse at scrouse2@uwyo.edu.<br><br>
+Initial PCBs, code, software, and CAD developed by Samuel Crouse using resources at the Sun Lab at the University of Wyoming.
 
 ## ARDUINO IDE DEPENDENCIES
 FED3 by Lex Kravitz : 1.16.3<br>
