@@ -1,0 +1,1 @@
+date,time,millis,event,pulseCount,rightCount,leftCount,dispensedCount,retrievedCount,rightWaterCount,leftWaterCount,LEDCount,toneCount,frontWaterCount,waterDispensedCount,rightWD_QTY,leftWD_QTY,frontWD_QTY,totalWD_QTY,rightWithPelletCount,leftWithPelletCount,rightDuringDispenseCount,leftDuringDispenseCount,rightinTimeoutCount,leftinTimeoutCount

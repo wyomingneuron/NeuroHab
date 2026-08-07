@@ -1,0 +1,76 @@
+// SYNCHRONOUS PULSES:
+// BUFFER SIZE 90: switch count max: 60
+
+// SINGLE CHANNEL MAX
+// Pulsed: 1238 times. In 5000 milliseconds. At 247.60hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 3.00.
+// Pulsed: 1238 times. In 5000 milliseconds. At 247.60hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 3.00.
+// Pulsed: 1238 times. In 5000 milliseconds. At 247.60hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 3.00.
+
+// Pulsed: 3741 times. In 60000 milliseconds. At 62.35hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 15.00.
+// Pulsed: 3741 times. In 60000 milliseconds. At 62.35hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 15.00.
+// Pulsed: 3741 times. In 60000 milliseconds. At 62.35hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 15.00.
+
+// Pulsed: 5703 times. In 120000 milliseconds. At 47.53hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 20.00.
+// Pulsed: 5703 times. In 120000 milliseconds. At 47.53hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 20.00.
+// Pulsed: 5703 times. In 120000 milliseconds. At 47.53hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 20.00.
+
+
+// DUAL CHANNEL MAX
+// Pulsed: 312 times. In 5000 milliseconds. At 62.40hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 15.00.
+// Pulsed: 312 times. In 5000 milliseconds. At 62.40hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 15.00.
+// Pulsed: 312 times. In 5000 milliseconds. At 62.40hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 15.00.
+
+// Pulsed: 983 times. In 60000 milliseconds. At 16.38hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 60.00.
+// Pulsed: 983 times. In 60000 milliseconds. At 16.38hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 60.00.
+// Pulsed: 983 times. In 60000 milliseconds. At 16.38hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 60.00.
+
+// Pulsed: 1690 times. In 120000 milliseconds. At 14.08hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 70.00.
+// Pulsed: 1690 times. In 120000 milliseconds. At 14.08hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 70.00.
+// Pulsed: 1690 times. In 120000 milliseconds. At 14.08hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 70.00.
+
+
+// TRIPLE CHANNEL MAX
+// Pulsed: 139 times. In 5000 milliseconds. At 27.80hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 35.00.
+// Pulsed: 139 times. In 5000 milliseconds. At 27.80hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 35.00.
+// Pulsed: 139 times. In 5000 milliseconds. At 27.80hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 35.00.
+
+// Pulsed: 845 times. In 60000 milliseconds. At 14.08hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 70.00.
+// Pulsed: 845 times. In 60000 milliseconds. At 14.08hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 70.00.
+// Pulsed: 845 times. In 60000 milliseconds. At 14.08hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 70.00.
+
+// Pulsed: 1578 times. In 120000 milliseconds. At 13.15hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 75.00.
+// Pulsed: 1578 times. In 120000 milliseconds. At 13.15hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 75.00.
+// Pulsed: 1578 times. In 120000 milliseconds. At 13.15hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 75.00.
+
+
+
+// STAGGERED PULSES: 50us BETWEEN DRAINS:
+
+// DUAL CHANNEL MAX
+// Pulsed: 814 times. In 5000 milliseconds. At 162.80hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 5.00.
+// Pulsed: 814 times. In 5000 milliseconds. At 162.80hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 5.00.
+// Pulsed: 814 times. In 5000 milliseconds. At 162.80hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 5.00.
+
+// Pulsed: 5382 times. In 60000 milliseconds. At 89.70hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 10.00.
+// Pulsed: 5382 times. In 60000 milliseconds. At 89.70hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 10.00.
+// Pulsed: 5382 times. In 60000 milliseconds. At 89.70hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 10.00.
+
+// Pulsed: 7432 times. In 120000 milliseconds. At 61.93hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 15.00.
+// Pulsed: 7432 times. In 120000 milliseconds. At 61.93hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 15.00.
+// Pulsed: 7432 times. In 120000 milliseconds. At 61.93hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 15.00.
+
+
+// TRIPLE CHANNEL MAX
+// Pulsed: 807 times. In 5000 milliseconds. At 161.40hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 5.00.
+// Pulsed: 807 times. In 5000 milliseconds. At 161.40hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 5.00.
+// Pulsed: 807 times. In 5000 milliseconds. At 161.40hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 5.00.
+
+// Pulsed: 3704 times. In 60000 milliseconds. At 61.73hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 15.00.
+// Pulsed: 3704 times. In 60000 milliseconds. At 61.73hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 15.00.
+// Pulsed: 3704 times. In 60000 milliseconds. At 61.73hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 15.00.
+
+// Pulsed: 5660 times. In 120000 milliseconds. At 47.17hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 20.00.
+// Pulsed: 5660 times. In 120000 milliseconds. At 47.17hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 20.00.
+// Pulsed: 5660 times. In 120000 milliseconds. At 47.17hz. Settings: pulse_duration_us: 500. pulse_count: 1. time_between_pulses_ms: 20.00.
+
+
