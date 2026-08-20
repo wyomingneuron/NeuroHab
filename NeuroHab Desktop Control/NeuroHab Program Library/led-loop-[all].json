@@ -1,0 +1,73 @@
+{
+  "cmd": "load_program",
+  "name": "LED-LOOP-[ALL]",
+  "setup": [
+    {
+      "type": "set_brightness",
+      "val": 1
+    },
+    {
+      "type": "set_led_color",
+      "port": "RW",
+      "r": 0,
+      "g": 255,
+      "b": 0
+    }
+  ],
+  "loop": [
+    {
+      "type": "led",
+      "port": "FW",
+      "state": "off"
+    },
+    {
+      "type": "led",
+      "port": "RW",
+      "state": "on"
+    },
+    {
+      "type": "log_msg",
+      "msg": "RW CS ON"
+    },
+    {
+      "type": "wait",
+      "ms": 2500
+    },
+    {
+      "type": "led",
+      "port": "RW",
+      "state": "off"
+    },
+    {
+      "type": "led",
+      "port": "LW",
+      "state": "on"
+    },
+    {
+      "type": "log_msg",
+      "msg": "LW CS ON"
+    },
+    {
+      "type": "wait",
+      "ms": 2500
+    },
+    {
+      "type": "led",
+      "port": "LW",
+      "state": "off"
+    },
+    {
+      "type": "led",
+      "port": "FW",
+      "state": "on"
+    },
+    {
+      "type": "log_msg",
+      "msg": "FW CS ON"
+    },
+    {
+      "type": "wait",
+      "ms": 2500
+    }
+  ]
+}

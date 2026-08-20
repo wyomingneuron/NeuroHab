@@ -1,0 +1,29 @@
+{
+  "cmd": "load_program",
+  "name": "Dual-Port-Feed-CS",
+  "setup": [],
+  "loop": [
+    {
+      "type": "if_left_poke",
+      "steps": [
+        {
+          "type": "conditioned_stimulus"
+        },
+        {
+          "type": "feed"
+        }
+      ]
+    },
+    {
+      "type": "if_right_poke",
+      "steps": [
+        {
+          "type": "conditioned_stimulus"
+        },
+        {
+          "type": "feed"
+        }
+      ]
+    }
+  ]
+}

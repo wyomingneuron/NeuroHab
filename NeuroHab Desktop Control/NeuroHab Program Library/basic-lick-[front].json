@@ -1,0 +1,11 @@
+{
+  "cmd": "load_program",
+  "name": "Basic-Lick-[FRONT]",
+  "setup": [],
+  "loop": [
+    {
+      "type": "lick_detect_dispense",
+      "port": "FW"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "cmd": "load_program",
+  "name": "Clear-CS",
+  "setup": [
+    {
+      "type": "reset_all"
+    }
+  ],
+  "loop": []
+}
