@@ -1,0 +1,779 @@
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/iconfont/tabler-icons.min.css">
+<style>
+/* ── THEME TOKENS ───────────────────────────────────── */
+:root {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Mono', monospace;
+}
+[data-theme="dark"] {
+  --bg-base:#0f1117;--bg-surface:#161b26;--bg-surface2:#1a2030;--bg-input:#0f1117;
+  --border:#1e2535;--border-hi:#334155;--accent:#6366f1;--accent-hover:#5457d6;--accent-dim:#1e2d4a;
+  --text-primary:#f1f5f9;--text-body:#e2e8f0;--text-muted:#94a3b8;--text-faint:#64748b;--text-faintest:#475569;
+  --green:#22c55e;--green-dim:#14532d;--green-text:#86efac;--green-chip-bg:#1a2f1a;
+  --red-dim:#991b1b;--red-text:#fca5a5;--purple:#a78bfa;--purple-dim:#1e1a3a;
+  --blue-text:#60a5fa;--blue-dim:#1e3a5f;--badge-bg:#1e3a5f;--badge-text:#60a5fa;
+  --nav-active-bg:#1e2d4a;--nav-active-text:#60a5fa;--running-color:#fbbf24;
+  --log-sent-bg:#1e2d4a20;--log-recv-bg:#1a2f1a20;--log-sys-bg:#1e293b20;--log-border:#1e253510;
+  --term-bg:#090c12;--term-header:#111620;
+}
+[data-theme="neon"] {
+  --bg-base:#1a1520;--bg-surface:#221a2c;--bg-surface2:#2a2038;--bg-input:#150f1e;
+  --border:#3a2a4a;--border-hi:#5a3a6a;--accent:#e05580;--accent-hover:#c44068;--accent-dim:#3a1528;
+  --text-primary:#f5e8f5;--text-body:#e8d5e8;--text-muted:#b090b8;--text-faint:#7a5a8a;--text-faintest:#604870;
+  --green:#2ee8b0;--green-dim:#0a3028;--green-text:#6efed4;--green-chip-bg:#0d2a22;
+  --red-dim:#5a1025;--red-text:#ff9ab8;--purple:#c084fc;--purple-dim:#2a1050;
+  --blue-text:#7dd4ff;--blue-dim:#0e2a50;--badge-bg:#3a1528;--badge-text:#ff7aaa;
+  --nav-active-bg:#3a1535;--nav-active-text:#ff7aaa;--running-color:#ffda6e;
+  --log-sent-bg:#3a152820;--log-recv-bg:#0a302820;--log-sys-bg:#2a103820;--log-border:#3a2a4a20;
+  --term-bg:#0e0a18;--term-header:#1a1028;
+}
+
+/* ── BASE ───────────────────────────────────────────── */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:var(--font-sans);background:var(--bg-base);color:var(--text-body);height:100%;display:flex;flex-direction:column;overflow:hidden;transition:background .25s,color .25s}
+
+/* ── THEME SWITCHER ─────────────────────────────────── */
+.theme-switcher{position:relative;display:inline-flex;align-items:center}
+.theme-select{appearance:none;background:var(--bg-surface);border:1px solid var(--border);color:var(--text-muted);font-size:11px;font-family:var(--font-sans);padding:5px 28px 5px 10px;border-radius:6px;cursor:pointer;transition:all .15s}
+.theme-select:hover{border-color:var(--border-hi);color:var(--text-body)}
+.theme-select:focus{outline:none;border-color:var(--accent)}
+.theme-caret{position:absolute;right:8px;pointer-events:none;color:var(--text-faint);font-size:12px}
+
+/* ── LAYOUT ─────────────────────────────────────────── */
+.app-shell{display:flex;flex:1;min-height:0}
+.sidebar{background:var(--bg-surface);border-right:1px solid var(--border);width:220px;flex-shrink:0;display:flex;flex-direction:column;transition:background .25s,border-color .25s}
+.sidebar-logo{padding:20px 20px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--accent),var(--purple));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0}
+.logo-text{font-size:14px;font-weight:600;color:var(--text-primary)}
+.logo-sub{font-size:11px;color:var(--text-faint)}
+.nav{padding:12px 8px;flex:1;overflow-y:auto}
+.nav-label{font-size:10px;font-weight:600;color:var(--text-faintest);letter-spacing:.08em;text-transform:uppercase;padding:8px 12px 4px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--text-muted);transition:all .15s;margin-bottom:2px;user-select:none}
+.nav-item:hover{background:var(--border);color:var(--text-body)}
+.nav-item.active{background:var(--nav-active-bg);color:var(--nav-active-text)}
+.nav-item i{font-size:16px}
+.nav-badge{margin-left:auto;background:var(--badge-bg);color:var(--badge-text);font-size:10px;padding:2px 6px;border-radius:10px;font-weight:600}
+.sidebar-footer{padding:12px 8px;border-top:1px solid var(--border)}
+
+/* ── MAIN CONTENT AREA ──────────────────────────────── */
+.content-area{flex:1;display:flex;flex-direction:row;min-width:0;min-height:0;overflow:hidden}
+.main-col{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden}
+.main{flex:1;background:var(--bg-base);padding:24px;overflow-y:auto;transition:background .25s;min-height:0}
+.page-title{font-size:22px;font-weight:600;color:var(--text-primary)}
+.page-sub{font-size:13px;color:var(--text-faint);margin-top:2px}
+.top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;border:none;font-family:var(--font-sans)}
+.btn-ghost{background:transparent;color:var(--text-muted);border:1px solid var(--border)}
+.btn-ghost:hover{background:var(--border);color:var(--text-body)}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent-hover)}
+.btn-sm{padding:5px 10px;font-size:11px}
+.devices-grid{display:flex;flex-direction:column;gap:16px}
+.device-card{background:var(--bg-surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .2s,background .25s}
+.device-card.connected{border-color:var(--blue-dim)}
+.device-header{padding:14px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);background:var(--bg-surface2)}
+.device-num{width:28px;height:28px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
+.device-name-wrap{flex:1;min-width:0}
+.device-name{font-size:14px;font-weight:600;color:var(--text-primary);display:flex;align-items:center;gap:6px}
+.device-name input{background:transparent;border:none;color:var(--text-primary);font-size:14px;font-weight:600;font-family:var(--font-sans);width:160px;outline:none;border-bottom:1px solid transparent;transition:.15s}
+.device-name input:focus{border-bottom-color:var(--accent)}
+.device-name i{font-size:13px;color:var(--text-faintest);cursor:pointer}
+.device-name i:hover{color:var(--text-muted)}
+.device-status{font-size:11px;color:var(--text-faint);margin-top:1px}
+.device-controls{display:flex;align-items:center;gap:8px;margin-left:auto}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--border-hi)}
+.status-dot.connected{background:var(--green);box-shadow:0 0 6px color-mix(in srgb,var(--green) 50%,transparent)}
+.device-body{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.micro-panel{padding:16px 18px}
+.micro-panel:first-child{border-right:1px solid var(--border)}
+.micro-label{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
+.micro-label i{font-size:14px}
+.micro-label .chip{font-size:10px;padding:2px 7px;border-radius:4px;font-weight:600;letter-spacing:.03em}
+.chip-ard{background:var(--green-chip-bg);color:var(--green-text)}
+.chip-esp{background:var(--purple-dim);color:var(--purple)}
+.port-row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.port-display{flex:1;background:var(--bg-input);border:1px solid var(--border);color:var(--text-faintest);font-size:11px;padding:6px 10px;border-radius:6px;font-family:var(--font-mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:none}
+.port-display.has-port{color:var(--text-body);border-color:var(--border-hi)}
+.connect-btn{padding:6px 12px;font-size:11px;border-radius:6px;cursor:pointer;font-family:var(--font-sans);font-weight:500;transition:all .15s;border:none;white-space:nowrap}
+.connect-btn.disconnected{background:var(--border);color:var(--text-muted);border:1px solid var(--border)}
+.connect-btn.disconnected:hover{background:var(--blue-dim);color:var(--blue-text);border-color:var(--blue-dim)}
+.connect-btn.active{background:var(--green-dim);color:var(--green-text);border:1px solid var(--green-dim)}
+.connect-btn.active:hover{background:var(--red-dim);color:var(--red-text);border-color:var(--red-dim)}
+.action-row{display:flex;gap:6px;flex-wrap:wrap}
+.action-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;transition:all .15s;border:1px solid transparent;font-family:var(--font-sans)}
+.action-btn:disabled{opacity:.35;cursor:not-allowed}
+.action-btn.start{background:color-mix(in srgb,var(--green-dim) 30%,transparent);color:var(--green-text);border-color:var(--green-dim)}
+.action-btn.start:hover:not(:disabled){background:color-mix(in srgb,var(--green-dim) 60%,transparent)}
+.action-btn.stop{background:color-mix(in srgb,var(--red-dim) 20%,transparent);color:var(--red-text);border-color:var(--red-dim)}
+.action-btn.stop:hover:not(:disabled){background:color-mix(in srgb,var(--red-dim) 40%,transparent)}
+.action-btn.reset{background:var(--bg-surface2);color:var(--text-muted);border-color:var(--border-hi)}
+.action-btn.reset:hover:not(:disabled){background:var(--blue-dim);color:var(--blue-text);border-color:var(--blue-dim)}
+.action-btn i{font-size:12px}
+.cmd-panel{padding:16px 18px;border-top:1px solid var(--border);background:var(--bg-base)}
+.cmd-panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.cmd-panel-title{font-size:11px;font-weight:600;color:var(--text-faintest);text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:6px}
+.cmd-panel-title i{font-size:13px}
+.cmd-clear{font-size:10px;color:var(--text-faintest);cursor:pointer;padding:2px 6px;border-radius:4px;border:1px solid var(--border);background:transparent;font-family:var(--font-sans)}
+.cmd-clear:hover{color:var(--text-muted);border-color:var(--border-hi)}
+.cmd-log{font-family:var(--font-mono);font-size:11px;max-height:120px;overflow-y:auto;display:flex;flex-direction:column;gap:3px}
+.cmd-entry{display:flex;align-items:flex-start;gap:8px;padding:3px 6px;border-radius:4px}
+.cmd-entry.sent{background:var(--log-sent-bg)}
+.cmd-entry.recv{background:var(--log-recv-bg)}
+.cmd-entry.sys{background:var(--log-sys-bg)}
+.cmd-ts{color:var(--text-faintest);flex-shrink:0;font-size:10px;padding-top:1px}
+.cmd-dir{flex-shrink:0;width:30px;font-size:10px;font-weight:600}
+.cmd-dir.out{color:var(--blue-text)}
+.cmd-dir.in{color:var(--green-text)}
+.cmd-dir.sys{color:var(--purple)}
+.cmd-text{color:var(--text-body);word-break:break-all}
+.config-bar{display:flex;gap:8px;align-items:center}
+
+/* ── MODALS ─────────────────────────────────────────── */
+.modal-overlay{display:none;position:fixed;inset:0;background:#00000088;z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(2px)}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg-surface);border:1px solid var(--border);border-radius:14px;padding:24px;width:420px;max-width:90vw;box-shadow:0 24px 64px #00000060}
+.modal h3{font-size:16px;font-weight:600;color:var(--text-primary);margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.modal p{font-size:12px;color:var(--text-faint);margin-bottom:16px}
+.modal textarea{width:100%;background:var(--bg-input);border:1px solid var(--border);color:var(--text-body);font-family:var(--font-mono);font-size:11px;padding:10px;border-radius:6px;height:200px;resize:none;outline:none}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+
+/* ── SETTINGS MODAL ─────────────────────────────────── */
+.settings-modal{width:480px}
+.settings-section{margin-bottom:20px}
+.settings-section:last-child{margin-bottom:0}
+.settings-section-title{font-size:10px;font-weight:700;color:var(--text-faintest);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;gap:16px}
+.settings-row-label{font-size:13px;color:var(--text-body)}
+.settings-row-sub{font-size:11px;color:var(--text-faint);margin-top:1px}
+.settings-select{background:var(--bg-input);border:1px solid var(--border);color:var(--text-body);font-size:12px;font-family:var(--font-sans);padding:5px 10px;border-radius:6px;cursor:pointer;min-width:120px}
+.settings-select:focus{outline:none;border-color:var(--accent)}
+.settings-divider{border:none;border-top:1px solid var(--border);margin:4px 0}
+
+/* ── SERIAL PANEL (right sidebar) ───────────────────── */
+.serial-panel{background:var(--term-bg);border-left:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;width:320px;transition:width .2s ease,opacity .2s ease;overflow:hidden}
+.serial-panel.hidden{width:0;opacity:0;pointer-events:none;border-left:none}
+.serial-header{display:flex;align-items:center;gap:8px;padding:0 14px;height:42px;border-bottom:1px solid var(--border);background:var(--term-header);flex-shrink:0}
+.serial-title{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:6px;flex:1;white-space:nowrap}
+.serial-title i{font-size:13px;color:var(--green-text)}
+.serial-controls{display:flex;align-items:center;gap:6px;margin-left:auto}
+.baud-select{appearance:none;background:var(--bg-surface);border:1px solid var(--border);color:var(--text-muted);font-size:10px;font-family:var(--font-mono);padding:3px 20px 3px 6px;border-radius:4px;cursor:pointer}
+.baud-label{font-size:10px;color:var(--text-faintest);font-family:var(--font-mono);white-space:nowrap}
+.baud-wrapper{position:relative;display:inline-flex;align-items:center}
+.baud-wrapper .baud-caret{position:absolute;right:4px;pointer-events:none;color:var(--text-faintest);font-size:10px}
+.serial-close-btn{background:none;border:none;color:var(--text-faintest);cursor:pointer;padding:4px;border-radius:4px;display:flex;align-items:center;transition:color .15s;flex-shrink:0}
+.serial-close-btn:hover{color:var(--text-muted)}
+.term-clear-btn{background:none;border:none;color:var(--text-faintest);cursor:pointer;font-size:10px;font-family:var(--font-sans);padding:2px 6px;border-radius:3px;border:1px solid var(--border);white-space:nowrap}
+.term-clear-btn:hover{color:var(--text-muted);border-color:var(--border-hi)}
+.serial-body{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.terminal-log{flex:1;overflow-y:auto;padding:6px 10px;font-family:var(--font-mono);font-size:10.5px;display:flex;flex-direction:column;gap:1px}
+.terminal-log .log-row{display:flex;gap:6px;padding:2px 3px;border-radius:3px;border-bottom:1px solid var(--log-border)}
+.terminal-log .log-row:last-child{border:none}
+.terminal-log .log-row.recv-row{background:var(--log-recv-bg)}
+.terminal-log .log-ts{color:var(--text-faintest);flex-shrink:0;white-space:nowrap}
+.terminal-log .log-device{color:var(--accent);flex-shrink:0;max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.terminal-log .log-dir{width:24px;flex-shrink:0;font-weight:700}
+.terminal-log .log-dir.out{color:var(--blue-text)}
+.terminal-log .log-dir.in{color:var(--green-text)}
+.terminal-log .log-dir.sys{color:var(--purple)}
+.terminal-log .log-payload{color:var(--text-body);word-break:break-all;min-width:0}
+.terminal-input-row{display:flex;align-items:center;border-top:1px solid var(--border);flex-shrink:0}
+.terminal-prompt{font-family:var(--font-mono);font-size:12px;color:var(--green-text);padding:0 6px 0 12px;flex-shrink:0}
+.terminal-input{flex:1;background:transparent;border:none;color:var(--text-body);font-family:var(--font-mono);font-size:11px;padding:8px 0;outline:none;min-width:0}
+.terminal-send{background:none;border:none;border-left:1px solid var(--border);color:var(--text-faintest);cursor:pointer;padding:0 10px;height:34px;font-size:11px;font-family:var(--font-sans);transition:color .15s;display:flex;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0}
+.terminal-send:hover{color:var(--text-muted)}
+
+/* Neon extras */
+[data-theme="neon"] .logo-icon{box-shadow:0 0 16px color-mix(in srgb,var(--accent) 40%,transparent)}
+[data-theme="neon"] .status-dot.connected{box-shadow:0 0 8px var(--green),0 0 16px color-mix(in srgb,var(--green) 30%,transparent)}
+[data-theme="neon"] .device-card.connected{box-shadow:0 0 0 1px var(--blue-dim),0 4px 24px color-mix(in srgb,var(--accent) 8%,transparent)}
+[data-theme="neon"] .btn-primary{box-shadow:0 0 12px color-mix(in srgb,var(--accent) 35%,transparent)}
+[data-theme="neon"] .btn-primary:hover{box-shadow:0 0 20px color-mix(in srgb,var(--accent) 50%,transparent)}
+[data-theme="neon"] .connect-btn.active{box-shadow:0 0 8px color-mix(in srgb,var(--green) 30%,transparent)}
+[data-theme="neon"] .terminal-title i{text-shadow:0 0 8px var(--green-text)}
+</style>
+
+<div id="app-root" data-theme="dark">
+
+<!-- ── APP SHELL ─── -->
+<div class="app-shell">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">NH</div>
+      <div>
+        <div class="logo-text">NeuroHab</div>
+        <div class="logo-sub">Device Manager</div>
+      </div>
+    </div>
+    <nav class="nav">
+      <div class="nav-label">Workspace</div>
+      <div class="nav-item active" onclick="showDevices()"><i class="ti ti-cpu" aria-hidden="true"></i> Devices <span class="nav-badge" id="connected-count">0/3</span></div>
+      <div class="nav-item" onclick="toggleSerial()" id="nav-serial"><i class="ti ti-terminal-2" aria-hidden="true"></i> Serial Log</div>
+      <div class="nav-item" onclick="openSettings()" id="nav-settings"><i class="ti ti-settings" aria-hidden="true"></i> Settings</div>
+      <div class="nav-label" style="margin-top:8px">Config</div>
+      <div class="nav-item" onclick="exportConfig()"><i class="ti ti-download" aria-hidden="true"></i> Export config</div>
+      <div class="nav-item" onclick="document.getElementById('import-file').click()"><i class="ti ti-upload" aria-hidden="true"></i> Import config</div>
+      <input type="file" id="import-file" accept=".json" style="display:none" onchange="importConfig(event)">
+    </nav>
+    <div class="sidebar-footer">
+      <div class="nav-item" style="color:var(--text-faintest);font-size:12px"><i class="ti ti-info-circle" aria-hidden="true"></i> Web Serial API</div>
+    </div>
+  </div>
+
+  <!-- CONTENT AREA -->
+  <div class="content-area">
+    <div class="main-col">
+    <div class="main">
+      <div class="top-bar">
+        <div>
+          <div class="page-title">Devices</div>
+          <div class="page-sub">Manage NeuroHab hardware pairs — Arduino + ESP32</div>
+        </div>
+        <div class="config-bar">
+          <div class="theme-switcher" title="Switch theme">
+            <select class="theme-select" id="theme-select" onchange="setTheme(this.value)" aria-label="Select theme">
+              <option value="dark">Dark</option>
+              <option value="neon">Neon</option>
+            </select>
+            <i class="ti ti-palette theme-caret" aria-hidden="true"></i>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="exportConfig()"><i class="ti ti-download" aria-hidden="true"></i> Export</button>
+          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('import-file').click()"><i class="ti ti-upload" aria-hidden="true"></i> Import</button>
+          <button class="btn btn-primary btn-sm" onclick="scanPorts()"><i class="ti ti-refresh" aria-hidden="true"></i> Scan ports</button>
+        </div>
+      </div>
+
+      <div class="devices-grid" id="devices-grid"></div>
+    </div>
+    </div><!-- /main-col -->
+
+    <!-- SERIAL PANEL (right side) -->
+    <div class="serial-panel hidden" id="serial-panel">
+      <div class="serial-header">
+        <div class="serial-title"><i class="ti ti-terminal-2"></i> Serial Log</div>
+        <div class="serial-controls">
+          <span class="baud-label">Baud:</span>
+          <div class="baud-wrapper">
+            <select class="baud-select" id="baud-select" onchange="setBaudRate(this.value)">
+              <option value="300">300</option>
+              <option value="1200">1200</option>
+              <option value="2400">2400</option>
+              <option value="4800">4800</option>
+              <option value="9600" selected>9600</option>
+              <option value="19200">19200</option>
+              <option value="38400">38400</option>
+              <option value="57600">57600</option>
+              <option value="115200">115200</option>
+              <option value="230400">230400</option>
+              <option value="250000">250000</option>
+              <option value="500000">500000</option>
+              <option value="1000000">1000000</option>
+            </select>
+            <i class="ti ti-chevron-down baud-caret"></i>
+          </div>
+          <button class="term-clear-btn" onclick="clearGlobalLog()">Clear</button>
+          <button class="serial-close-btn" onclick="toggleSerial()" title="Close serial log"><i class="ti ti-x" style="font-size:13px"></i></button>
+        </div>
+      </div>
+      <div class="serial-body">
+        <div class="terminal-log" id="global-log-body">
+          <div class="log-row" data-placeholder><span class="log-ts">--:--:--</span><span class="log-device" style="color:var(--text-faintest)">system</span><span class="log-dir sys">SYS</span><span class="log-payload" style="color:var(--text-faintest)">Waiting for device connections...</span></div>
+        </div>
+        <div class="terminal-input-row">
+          <span class="terminal-prompt">›</span>
+          <input class="terminal-input" id="terminal-input" placeholder="Send to all devices…" onkeydown="if(event.key==='Enter')termSend()">
+          <button class="terminal-send" onclick="termSend()"><i class="ti ti-send" style="font-size:11px"></i> Send</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content-area -->
+</div><!-- /app-shell -->
+
+<!-- ── IMPORT MODAL ── -->
+<div class="modal-overlay" id="import-modal">
+  <div class="modal">
+    <h3><i class="ti ti-upload" style="color:var(--accent)"></i> Import config</h3>
+    <p>Paste or review the config JSON below, then click Apply.</p>
+    <textarea id="import-json" spellcheck="false"></textarea>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeImportModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="applyImport()">Apply</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── SETTINGS MODAL ── -->
+<div class="modal-overlay" id="settings-modal" onclick="if(event.target===this)closeSettings()">
+  <div class="modal settings-modal">
+    <h3><i class="ti ti-settings" style="color:var(--accent)"></i> Settings</h3>
+    <p>Application preferences and display options.</p>
+
+    <div class="settings-section">
+      <div class="settings-section-title">Appearance</div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">Theme</div>
+          <div class="settings-row-sub">Color scheme for the interface</div>
+        </div>
+        <select class="settings-select" onchange="setTheme(this.value)" id="settings-theme-select">
+          <option value="dark">Dark</option>
+          <option value="neon">Neon</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">Serial Connection</div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">Default baud rate</div>
+          <div class="settings-row-sub">Applied when opening a new serial connection</div>
+        </div>
+        <select class="settings-select" id="settings-baud-select" onchange="setBaudRate(this.value)">
+          <option value="300">300</option>
+          <option value="1200">1200</option>
+          <option value="2400">2400</option>
+          <option value="4800">4800</option>
+          <option value="9600" selected>9600</option>
+          <option value="19200">19200</option>
+          <option value="38400">38400</option>
+          <option value="57600">57600</option>
+          <option value="115200">115200</option>
+          <option value="230400">230400</option>
+          <option value="250000">250000</option>
+          <option value="500000">500000</option>
+          <option value="1000000">1000000</option>
+        </select>
+      </div>
+      <hr class="settings-divider">
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">Serial API mode</div>
+          <div class="settings-row-sub">Web Serial API <span id="serial-api-status" style="color:var(--green-text)">available</span></div>
+        </div>
+        <select class="settings-select" disabled>
+          <option>Auto-detect</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">Log</div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">Max log entries</div>
+          <div class="settings-row-sub">Per-device command trace limit</div>
+        </div>
+        <select class="settings-select" id="settings-log-limit" onchange="state.logLimit=parseInt(this.value)">
+          <option value="20">20</option>
+          <option value="50" selected>50</option>
+          <option value="100">100</option>
+          <option value="200">200</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="closeSettings()">Done</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /app-root -->
+
+<script>
+const MOCK_PORTS=['COM3','COM4','COM5','COM6','COM7','COM8','/dev/ttyUSB0','/dev/ttyUSB1','/dev/ttyACM0','/dev/ttyACM1'];
+const hasWebSerial='serial' in navigator;
+
+const state={
+  devices:[
+    {id:0,name:'NeuroHab 1',arduino:{port:null,connected:false,running:false,portObj:null},esp32:{port:null,connected:false,portObj:null},log:[]},
+    {id:1,name:'NeuroHab 2',arduino:{port:null,connected:false,running:false,portObj:null},esp32:{port:null,connected:false,portObj:null},log:[]},
+    {id:2,name:'NeuroHab 3',arduino:{port:null,connected:false,running:false,portObj:null},esp32:{port:null,connected:false,portObj:null},log:[]}
+  ],
+  globalLog:[],
+  baudRate:9600,
+  logLimit:50
+};
+
+// ── THEME ────────────────────────────────────────────
+function setTheme(theme){
+  document.getElementById('app-root').setAttribute('data-theme',theme);
+  document.getElementById('theme-select').value=theme;
+  document.getElementById('settings-theme-select').value=theme;
+}
+
+// ── SERIAL API STATUS ────────────────────────────────
+document.getElementById('serial-api-status').textContent=hasWebSerial?'available':'unavailable (simulation mode)';
+document.getElementById('serial-api-status').style.color=hasWebSerial?'var(--green-text)':'var(--red-text)';
+
+// ── BAUD RATE ────────────────────────────────────────
+function setBaudRate(val){
+  state.baudRate=parseInt(val);
+  document.getElementById('baud-select').value=val;
+  document.getElementById('settings-baud-select').value=val;
+  addGlobalLog(0,'SYS',`Baud rate set to ${val}`,'system');
+}
+
+// ── SERIAL PANEL TOGGLE ───────────────────────────────
+let serialOpen=false;
+function toggleSerial(){
+  serialOpen=!serialOpen;
+  document.getElementById('serial-panel').classList.toggle('hidden',!serialOpen);
+  document.getElementById('nav-serial').classList.toggle('active',serialOpen);
+  if(serialOpen){
+    const log=document.getElementById('global-log-body');
+    if(log)setTimeout(()=>log.scrollTop=log.scrollHeight,50);
+    document.getElementById('terminal-input').focus();
+  }
+}
+
+function termSend(){
+  const inp=document.getElementById('terminal-input');
+  const val=inp.value.trim();
+  if(!val)return;
+  state.devices.forEach(dev=>{
+    if(dev.arduino.connected)sendToArduino(dev.id,{cmd:val});
+  });
+  if(!state.devices.some(d=>d.arduino.connected))
+    addGlobalLog(0,'SYS','No devices connected — command not sent','system');
+  inp.value='';
+}
+
+// ── SETTINGS ─────────────────────────────────────────
+function openSettings(){
+  document.getElementById('settings-modal').classList.add('open');
+  document.getElementById('nav-settings').classList.add('active');
+}
+function closeSettings(){
+  document.getElementById('settings-modal').classList.remove('open');
+  document.getElementById('nav-settings').classList.remove('active');
+}
+
+function showDevices(){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelector('.nav-item').classList.add('active');
+}
+
+// ── HELPERS ──────────────────────────────────────────
+function ts(){const n=new Date();return[n.getHours(),n.getMinutes(),n.getSeconds()].map(x=>String(x).padStart(2,'0')).join(':')}
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+function addLog(deviceId,dir,payload,target){
+  const e={ts:ts(),dir,payload,target};
+  state.devices[deviceId].log.unshift(e);
+  if(state.devices[deviceId].log.length>state.logLimit)state.devices[deviceId].log.pop();
+  addGlobalLog(deviceId,dir,payload,target);
+  renderDeviceLog(deviceId);
+}
+function addSysLog(deviceId,msg){addLog(deviceId,'SYS',msg,'system')}
+function addGlobalLog(deviceId,dir,payload,target){
+  state.globalLog.push({ts:ts(),dir,payload,deviceId,target});
+  if(state.globalLog.length>500)state.globalLog.shift();
+  appendGlobalLogRow(state.globalLog[state.globalLog.length-1]);
+}
+
+function appendGlobalLogRow(e){
+  const el=document.getElementById('global-log-body');
+  if(!el)return;
+  // Remove placeholder if present
+  const placeholder=el.querySelector('[data-placeholder]');
+  if(placeholder)placeholder.remove();
+  const dirCls=e.dir==='TX'?'out':e.dir==='RX'?'in':'sys';
+  const devName=state.devices[e.deviceId]?.name||'system';
+  const rowCls=e.dir==='RX'?'recv-row':'';
+  const row=document.createElement('div');
+  row.className=`log-row ${rowCls}`;
+  row.innerHTML=`<span class="log-ts">${e.ts}</span><span class="log-device">${escHtml(devName)}</span><span class="log-dir ${dirCls}">${e.dir}</span><span class="log-payload">${escHtml(e.payload)}</span>`;
+  el.insertBefore(row,el.firstChild);
+  // Trim to 500 rows in DOM
+  while(el.children.length>500)el.removeChild(el.lastChild);
+}
+
+function renderGlobalLog(){
+  const el=document.getElementById('global-log-body');
+  if(!el)return;
+  el.innerHTML=state.globalLog.length===0
+    ?'<div data-placeholder style="color:var(--text-faintest);font-size:11px;padding:6px">No entries</div>'
+    :[...state.globalLog].reverse().map(e=>{
+        const dirCls=e.dir==='TX'?'out':e.dir==='RX'?'in':'sys';
+        const devName=state.devices[e.deviceId]?.name||'system';
+        const rowCls=e.dir==='RX'?'recv-row':'';
+        return`<div class="log-row ${rowCls}"><span class="log-ts">${e.ts}</span><span class="log-device">${escHtml(devName)}</span><span class="log-dir ${dirCls}">${e.dir}</span><span class="log-payload">${escHtml(e.payload)}</span></div>`;
+      }).join('');
+}
+
+function renderDeviceLog(deviceId){
+  const el=document.getElementById(`cmd-log-${deviceId}`);
+  if(!el)return;
+  el.innerHTML=state.devices[deviceId].log.slice(0,20).map(e=>{
+    const cls=e.dir==='TX'?'sent':e.dir==='RX'?'recv':'sys';
+    const dirCls=e.dir==='TX'?'out':e.dir==='RX'?'in':'sys';
+    const tgt=e.target&&e.target!=='system'?`<span style="color:var(--text-faintest);margin-right:4px">[${escHtml(e.target)}]</span>`:'';
+    return`<div class="cmd-entry ${cls}"><span class="cmd-ts">${e.ts}</span><span class="cmd-dir ${dirCls}">${e.dir}</span><span class="cmd-text">${tgt}${escHtml(e.payload)}</span></div>`;
+  }).join('')||'<div style="color:var(--text-faintest);font-size:11px;padding:4px 6px">No commands yet</div>';
+  el.scrollTop=0;
+}
+
+function renderGlobalLog(){
+  const el=document.getElementById('global-log-body');
+  if(!el)return;
+  const wasAtBottom=el.scrollHeight-el.scrollTop-el.clientHeight<20;
+  el.innerHTML=state.globalLog.slice(0,120).map(e=>{
+    const dirCls=e.dir==='TX'?'out':e.dir==='RX'?'in':'sys';
+    const devName=state.devices[e.deviceId]?.name||'system';
+    return`<div class="log-row"><span class="log-ts">${e.ts}</span><span class="log-device">${escHtml(devName)}</span><span class="log-dir ${dirCls}">${e.dir}</span><span class="log-payload">${escHtml(e.payload)}</span></div>`;
+  }).join('')||'<div style="color:var(--text-faintest);font-size:11px">No entries</div>';
+  if(wasAtBottom)el.scrollTop=el.scrollHeight;
+}
+
+function clearDeviceLog(id){state.devices[id].log=[];renderDeviceLog(id)}
+function clearGlobalLog(){state.globalLog=[];renderGlobalLog()}
+
+function updateConnectedCount(){
+  const n=state.devices.filter(d=>d.arduino.connected||d.esp32.connected).length;
+  document.getElementById('connected-count').textContent=`${n}/3`;
+}
+
+async function startReading(deviceId, type){
+  const micro=state.devices[deviceId][type];
+  const port=micro.portObj;
+  if(!port||!port.readable)return;
+  const reader=port.readable.getReader();
+  micro.reader=reader;
+  let buf='';
+  try{
+    while(true){
+      const {value,done}=await reader.read();
+      if(done)break;
+      buf+=new TextDecoder().decode(value);
+      let nl;
+      while((nl=buf.indexOf('\n'))!==-1){
+        const line=buf.slice(0,nl).replace(/\r/,'').trim();
+        buf=buf.slice(nl+1);
+        if(line.length>0)addLog(deviceId,'RX',line,type);
+      }
+    }
+  }catch(e){
+    if(micro.connected)addSysLog(deviceId,`Read error: ${e.message}`);
+  }finally{
+    try{reader.releaseLock();}catch(_){}
+  }
+}
+
+async function connectMicro(deviceId,type){
+  const dev=state.devices[deviceId];const micro=dev[type];
+  if(micro.connected){
+    if(micro.reader){try{await micro.reader.cancel();}catch(e){}}
+    if(micro.portObj){try{await micro.portObj.close()}catch(e){}}
+    micro.connected=false;micro.portObj=null;micro.port=null;micro.reader=null;
+    if(type==='arduino')micro.running=false;
+    // Clear port display
+    const dispDisc=document.getElementById(`${type==='arduino'?'ard':'esp'}-port-display-${deviceId}`);
+    if(dispDisc){dispDisc.textContent='No port selected';dispDisc.classList.remove('has-port');}
+    addSysLog(deviceId,`${type==='arduino'?'Arduino':'ESP32'} disconnected`);
+    renderDevices();updateConnectedCount();return;
+  }
+  if(hasWebSerial){
+    try{
+      const port=await navigator.serial.requestPort();
+      await port.open({baudRate:state.baudRate});
+      micro.portObj=port;micro.connected=true;micro.port='Web Serial';
+      addSysLog(deviceId,`${type==='arduino'?'Arduino':'ESP32'} connected via Web Serial @ ${state.baudRate}`);
+      // Update port display
+      const dispConn=document.getElementById(`${type==='arduino'?'ard':'esp'}-port-display-${deviceId}`);
+      if(dispConn){dispConn.textContent='Web Serial';dispConn.classList.add('has-port');}
+      startReading(deviceId,type);
+      if(type==='arduino')setTimeout(()=>requestArduinoState(deviceId),300);
+    }catch(e){if(e.name!=='NotFoundError')addSysLog(deviceId,`Connection failed: ${e.message}`);}
+  } else {
+    // Simulation mode — show a port picker prompt
+    const portList=MOCK_PORTS.join('\n');
+    const chosen=prompt(`Select a port for ${type==='arduino'?'Arduino':'ESP32'} (simulation):\n\n${portList}`,MOCK_PORTS[0]);
+    if(!chosen){addSysLog(deviceId,'Connection cancelled');return;}
+    micro.port=chosen;micro.connected=true;
+    addSysLog(deviceId,`${type==='arduino'?'Arduino':'ESP32'} connected on ${chosen} @ ${state.baudRate} (simulated)`);
+    if(type==='arduino'){
+      setTimeout(()=>addLog(deviceId,'RX','{"status":"ready"}','arduino'),400);
+      setTimeout(()=>addLog(deviceId,'RX','{"status":"state","threshold":5.0,"led_brightness":1.1,"run_lick":true,"paused":false,"rw_led_on":true,"lw_led_on":true,"fw_led_on":true}','arduino'),700);
+    }
+  }
+  // Update port display label
+  const prefix=type==='arduino'?'ard':'esp';
+  const disp=document.getElementById(`${prefix}-port-display-${deviceId}`);
+  if(disp){
+    const label=micro.connected?(micro.port||'Web Serial'):'No port selected';
+    disp.textContent=label;
+    disp.classList.toggle('has-port',micro.connected);
+  }
+  renderDevices();updateConnectedCount();
+}
+
+async function sendToArduino(deviceId,payload){
+  const dev=state.devices[deviceId];const jsonStr=JSON.stringify(payload);
+  addLog(deviceId,'TX',jsonStr,'arduino');
+  if(dev.arduino.portObj){
+    try{const w=dev.arduino.portObj.writable.getWriter();await w.write(new TextEncoder().encode(jsonStr+'\n'));w.releaseLock();}
+    catch(e){addSysLog(deviceId,`Send error: ${e.message}`);}
+  }
+}
+
+async function resetMicro(deviceId,type){
+  const dev=state.devices[deviceId];const micro=dev[type];
+  if(!micro.connected){addSysLog(deviceId,`${type} not connected`);return;}
+  if(type==='arduino'){
+    await sendToArduino(deviceId,{cmd:'reset'});
+    dev.arduino.running=false;renderDevices();
+    if(!micro.portObj)setTimeout(()=>addLog(deviceId,'RX','{"status":"ready"}','arduino'),800);
+  } else {
+    if(micro.portObj){
+      try{
+        // ESP32 DevKitC hard reset — matches esptool's --after hard-reset sequence.
+        // Active-low signals: True = 0V, False = VCC.
+        // Two-transistor circuit: asserting BOTH DTR+RTS together is a no-op (safety).
+        // EN  ← RTS (inverted by transistor): RTS=True(0V) → EN pulled low (reset)
+        // GPIO0 ← DTR (inverted): DTR=False(VCC) → GPIO0 high (normal boot, not bootloader)
+        //
+        // Step 1: RTS=True → pull EN low (assert reset). DTR=False → GPIO0 high.
+        await micro.portObj.setSignals({requestToSend:true, dataTerminalReady:false});
+        await new Promise(r=>setTimeout(r,100));
+        // Step 2: RTS=False → release EN (chip boots normally). DTR stays False.
+        await micro.portObj.setSignals({requestToSend:false, dataTerminalReady:false});
+        addLog(deviceId,'TX','[RTS pulse — ESP32 DevKitC hard reset → normal boot]','esp32');
+      }catch(e){addSysLog(deviceId,`DTR reset error: ${e.message}`);}
+    } else {
+      addLog(deviceId,'TX','[DTR/RTS pulse — hardware reset]','esp32');
+      setTimeout(()=>addLog(deviceId,'RX','{"status":"ready"}','esp32'),1200);
+    }
+  }
+}
+
+async function startArduino(deviceId){
+  const dev=state.devices[deviceId];if(!dev.arduino.connected)return;
+  await sendToArduino(deviceId,{cmd:'resume'});dev.arduino.running=true;renderDevices();
+  if(!dev.arduino.portObj)setTimeout(()=>addLog(deviceId,'RX','{"status":"ok","key":"paused","value":false}','arduino'),300);
+}
+
+async function stopArduino(deviceId){
+  const dev=state.devices[deviceId];if(!dev.arduino.connected)return;
+  await sendToArduino(deviceId,{cmd:'pause'});dev.arduino.running=false;renderDevices();
+  if(!dev.arduino.portObj)setTimeout(()=>addLog(deviceId,'RX','{"status":"ok","key":"paused","value":true}','arduino'),300);
+}
+
+async function requestArduinoState(deviceId){await sendToArduino(deviceId,{cmd:'get_state'})}
+
+function renameDevice(id){const i=document.getElementById(`name-${id}`);if(i){i.focus();i.select()}}
+function saveDeviceName(id){
+  const i=document.getElementById(`name-${id}`);
+  if(i)state.devices[id].name=i.value||`NeuroHab ${id+1}`;
+  renderGlobalLog();updateConnectedCount();
+}
+
+function scanPorts(){
+  state.devices.forEach((_,i)=>addSysLog(i,'Port scan requested'));
+  if(hasWebSerial)alert('Click "Connect" on each device to select a port via the Web Serial dialog.');
+  else state.devices.forEach((_,i)=>addSysLog(i,'Simulated: found ports '+MOCK_PORTS.slice(0,4).join(', ')));
+}
+
+function exportConfig(){
+  const cfg={version:1,exported:new Date().toISOString(),devices:state.devices.map(d=>({
+    id:d.id,name:d.name,arduino:{port:d.arduino.port||null},esp32:{port:d.esp32.port||null}
+  }))};
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(cfg,null,2)],{type:'application/json'}));
+  a.download='neurohab-config.json';a.click();
+  addGlobalLog(0,'SYS','Config exported to neurohab-config.json','system');
+}
+
+function importConfig(e){
+  const file=e.target.files[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=ev=>{document.getElementById('import-json').value=ev.target.result;document.getElementById('import-modal').classList.add('open');};
+  r.readAsText(file);e.target.value='';
+}
+function closeImportModal(){document.getElementById('import-modal').classList.remove('open')}
+
+function applyImport(){
+  try{
+    const cfg=JSON.parse(document.getElementById('import-json').value);
+    if(!cfg.devices)throw new Error('Missing devices array');
+    cfg.devices.forEach(d=>{
+      if(d.id>=0&&d.id<3){
+        state.devices[d.id].name=d.name||state.devices[d.id].name;
+        state.devices[d.id].arduino.port=d.arduino?.port||null;
+        state.devices[d.id].esp32.port=d.esp32?.port||null;
+      }
+    });
+    renderDevices();closeImportModal();
+    addGlobalLog(0,'SYS','Config imported — names and ports restored','system');
+  }catch(e){alert('Invalid config JSON: '+e.message);}
+}
+
+function renderDevices(){
+  document.getElementById('devices-grid').innerHTML=state.devices.map(renderDevice).join('');
+  state.devices.forEach(d=>renderDeviceLog(d.id));
+}
+
+function renderDevice(dev){
+  const ardConn=dev.arduino.connected,espConn=dev.esp32.connected,anyConn=ardConn||espConn;
+  const ardPort=dev.arduino.port,espPort=dev.esp32.port;
+  return`
+<div class="device-card ${anyConn?'connected':''}" id="card-${dev.id}">
+  <div class="device-header">
+    <div class="device-num">${dev.id+1}</div>
+    <div class="device-name-wrap">
+      <div class="device-name">
+        <input id="name-${dev.id}" value="${escHtml(dev.name)}" onblur="saveDeviceName(${dev.id})" onkeydown="if(event.key==='Enter')this.blur()" maxlength="30">
+        <i class="ti ti-pencil" onclick="renameDevice(${dev.id})" title="Rename" aria-label="Rename device"></i>
+      </div>
+      <div class="device-status">
+        ${ardConn?`<span style="color:var(--green-text)">Arduino ✓</span> `:''}
+        ${espConn?`<span style="color:var(--purple)">ESP32 ✓</span>`:''}
+        ${!anyConn?'<span>No connections</span>':''}
+        ${ardConn&&dev.arduino.running?`<span style="color:var(--running-color);margin-left:4px">● Running</span>`:ardConn?`<span style="color:var(--text-faintest);margin-left:4px">● Paused</span>`:''}
+      </div>
+    </div>
+    <div class="device-controls"><div class="status-dot ${anyConn?'connected':''}"></div></div>
+  </div>
+  <div class="device-body">
+    <div class="micro-panel">
+      <div class="micro-label"><i class="ti ti-circuit-board" aria-hidden="true"></i> Arduino <span class="chip chip-ard">ATmega</span></div>
+      <div class="port-row">
+        <div class="port-display ${ardConn?'has-port':ardPort?'has-port':''}" id="ard-port-display-${dev.id}">${ardConn?(ardPort||'Web Serial'):ardPort?escHtml(ardPort):'No port selected'}</div>
+        <button class="connect-btn ${ardConn?'active':'disconnected'}" onclick="connectMicro(${dev.id},'arduino')">${ardConn?'Disconnect':'Connect'}</button>
+      </div>
+      <div class="action-row">
+        <button class="action-btn start" onclick="startArduino(${dev.id})" ${!ardConn||dev.arduino.running?'disabled':''}><i class="ti ti-player-play"></i> Start</button>
+        <button class="action-btn stop" onclick="stopArduino(${dev.id})" ${!ardConn||!dev.arduino.running?'disabled':''}><i class="ti ti-player-pause"></i> Stop</button>
+        <button class="action-btn reset" onclick="resetMicro(${dev.id},'arduino')" ${!ardConn?'disabled':''}><i class="ti ti-refresh"></i> Reset</button>
+        <button class="action-btn reset" onclick="requestArduinoState(${dev.id})" ${!ardConn?'disabled':''} title="Request state dump"><i class="ti ti-file-info"></i> Get state</button>
+      </div>
+    </div>
+    <div class="micro-panel">
+      <div class="micro-label"><i class="ti ti-wifi" aria-hidden="true"></i> ESP32 <span class="chip chip-esp">Espressif</span></div>
+      <div class="port-row">
+        <div class="port-display ${espConn?'has-port':espPort?'has-port':''}" id="esp-port-display-${dev.id}">${espConn?(espPort||'Web Serial'):espPort?escHtml(espPort):'No port selected'}</div>
+        <button class="connect-btn ${espConn?'active':'disconnected'}" onclick="connectMicro(${dev.id},'esp32')">${espConn?'Disconnect':'Connect'}</button>
+      </div>
+      <div class="action-row">
+        <button class="action-btn reset" onclick="resetMicro(${dev.id},'esp32')" ${!espConn?'disabled':''}><i class="ti ti-refresh"></i> Reset (DTR/RTS)</button>
+      </div>
+      <div style="margin-top:8px;font-size:10px;color:var(--text-faintest);line-height:1.5">Reboot only — firmware is fixed.<br>Uses hardware DTR/RTS pulse.</div>
+    </div>
+  </div>
+  <div class="cmd-panel">
+    <div class="cmd-panel-header">
+      <div class="cmd-panel-title"><i class="ti ti-terminal"></i> Command trace</div>
+      <button class="cmd-clear" onclick="clearDeviceLog(${dev.id})">Clear</button>
+    </div>
+    <div class="cmd-log" id="cmd-log-${dev.id}"><div style="color:var(--text-faintest);font-size:11px;padding:4px 6px">No commands yet</div></div>
+  </div>
+</div>`;
+}
+
+renderDevices();
+updateConnectedCount();
+</script>

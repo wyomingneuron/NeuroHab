@@ -1,0 +1,34 @@
+{
+  "cmd": "load_program",
+  "name": "BASIC-LICK-CS",
+  "setup": [
+    {
+      "type": "set_led_color",
+      "port": "all",
+      "color": "#00ff00"
+    },
+    {
+      "type": "led",
+      "port": "all",
+      "state": "on"
+    },
+    {
+      "type": "dispense",
+      "port": "RW"
+    },
+    {
+      "type": "dispense",
+      "port": "LW"
+    },
+    {
+      "type": "dispense",
+      "port": "FW"
+    }
+  ],
+  "loop": [
+    {
+      "type": "lick_detect_dispense",
+      "port": "any"
+    }
+  ]
+}
