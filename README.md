@@ -4,6 +4,31 @@ Check for solutions here and if this README does not solve your problem email me
 
 Latencies for the builds found here are <1ms with maxes at ~700 microseconds for 3 Lickport setups. Manuscipt latencies apply except for HTML versions whose latencies are slightly increased for the FED3 only (56->~150us).
 
+## Setup Options
+Both options require the dependencies below.
+#### Option 1 - Standard Arduino .ino Control - Default - NeuroHab_firm
+Provides nuanced system control based on C++ programmed control scripts.
+Flash NeuroHab_firm scripts and program the desired "-MEGA_program_name" for your paradigm. <br><br>
+
+Brief setup guide:
+1. Flash the Arduino MEGA with NeuroHab-MEGA_Example (or your desired paradigm)
+2. Flash the FED3 with the NeuroHab_Classic.ino
+3. Flash the ESP32 with NeuroHab-ESP_Logging.ino
+4. Complete the "NeuroHab Checklist ReadMe.md"
+
+#### Option 2 - Desktop Arduino HTML Control - User Friendly - NeuroHab Desktop Control
+Easily connect, operate, flash, and monitor experiments using the NeuroHab HTML Google Chrome script.
+Provides a GUI interface for connecting COM ports and a block programming GUI for simple paradigms.
+This is the easiest way to get started with the NeuroHab but lacks the finite paradigm control of Option 1. <br><br>
+
+Brief setup guide:
+1. Flash the Arduino MEGA with NeuroHab-MEGA-Desktop-V1.ino
+2. Flash the FED3 with the FED3-Desktop-V1.ino
+3. Flash the ESP32 with the NeuroHab-ESP_Logging.ino
+4. Complete the "NeuroHab Checklist ReadMe.md"
+
+#### Read the Experiment_README.md and the NeuroHab Checklist ReadMe.md for more information on the broad architecture.
+
 ## ARDUINO IDE DEPENDENCIES
 FED3 by Lex Kravitz : 1.16.3<br>
 CapacitiveSensor by Paul Bagder : 0.5.1<br>
