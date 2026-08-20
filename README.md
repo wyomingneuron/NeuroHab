@@ -1,12 +1,16 @@
 # QUICK START GUIDE
 This README contains the documentation for setup, addresses FAQ's, hardware installation, calibration, and more. Generally after a new problem is solved it is documented here.<br>
 Check for solutions here and if this README does not solve your problem email me, Samuel Crouse at scrouse2@uwyo.edu.<br><br>
-Initial PCBs, code, software, and CAD developed by Samuel Crouse using resources at the Sun Lab at the University of Wyoming.
+
+Latencies for the builds found here are <1ms with maxes at ~700 microseconds for 3 Lickport setups. Manuscipt latencies apply except for HTML versions whose latencies are slightly increased for the FED3 only (56->~150us).
 
 ## ARDUINO IDE DEPENDENCIES
 FED3 by Lex Kravitz : 1.16.3<br>
 CapacitiveSensor by Paul Bagder : 0.5.1<br>
-UART CP210 drivers on installed. Via CP210x VCP Windows Installer. This allows the ESP32 to connect properly via USB. <br><br>
+LiquidCrystal_I2C Martin Kubovcik : 2.0<br>
+ESP32 Espressif : 3.3.7<br>
+Adafruit SAMD Boards : Arduino Boards Manager<br>
+UART CP210 drivers are installed. Via CP210x VCP Windows Installer. This allows the ESP32 to connect properly via USB. <br><br>
 
 # NeuroHab Basic Setup and Use
 ## NeuroHab_firm
@@ -26,7 +30,7 @@ Files labeled -ESP will use <b>ESP32 Dev Module</b> <br>
 Files labeled -MEGA will use <b>Arduino Mega or Mega 2560</b> <br><br>
 
 ## Flashing ESP32
-Ensure UART CP210 drivers on installed. Via CP210x VCP Windows Installer. <br><br>
+Ensure UART CP210 drivers on installed. Via CP210x VCP Windows Installer. x64 installer <br><br>
 
 
 ## Flashing ESP32 Time Clock
