@@ -3,9 +3,17 @@
   "name": "BASIC-LICK-CS",
   "setup": [
     {
+      "type": "set_threshold",
+      "val": 4.5
+    },
+    {
       "type": "set_led_color",
       "port": "all",
-      "color": "#00ff00"
+      "color": {
+        "r": 0,
+        "g": 255,
+        "b": 0
+      }
     },
     {
       "type": "led",
