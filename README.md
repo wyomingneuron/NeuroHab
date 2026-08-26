@@ -1,4 +1,3 @@
-# This REPO is an outdated development repo. See current public publication repo at [https://github.com/wyomingneuron/NeuroHab](url).
 # QUICK START GUIDE
 This README contains the documentation for setup, addresses FAQ's, hardware installation, calibration, and more. Generally after a new problem is solved it is documented here.<br>
 Check for solutions here and if this README does not solve your problem email me, Samuel Crouse at scrouse2@uwyo.edu.<br><br>
