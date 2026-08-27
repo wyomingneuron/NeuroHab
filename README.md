@@ -138,6 +138,12 @@ This code is found within "NeuroHab/NeuroHab_firm/NeuroHab_Lib/NeuroHab_Control.
 <img width="794" height="14" alt="image" src="https://github.com/user-attachments/assets/8f6bbea2-b444-4bdc-be26-858d040545fd" /> <br>
 At 20 this is quite sensitive. 25 is good, and 30 may be too restrictive for mice, but it works well when manually activating it with a finger. Please test this value in your own setup.
 
+# Memory Management
+## ESP32_Logging.ino
+These two variables are responsible for the majority of the ESP32 memory management issues. Adjusting numPins down results in more memory but a loss of functionality across BNC channels.
+buffer_size allows for higher recording frequencies at larger values but uses much more memory. 90 is about the max. For example, adjusting numPins to 2 and buffer_size to 180 will allow for much higher single channel recording frequencies at the expense of channels 3 and 4 recording.
+const int numPins = 4;                // 4 provides for 3 channels of BNC IN recording, 3 for 2, 2 for 1, 1 for BOX only events.
+const int buffer_size = 90;           // << DEPENDING ON BUFFER DATA TYPES 100 WILL CRASH SYSTEM // how many pulses/times we can store before buffer overflow occurs.         Default 90 prior FED3 total event logging.
 
 # Hardware Installation
 ## Lickport Installation
