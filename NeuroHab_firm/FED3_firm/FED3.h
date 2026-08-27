@@ -151,7 +151,7 @@ class FED3 {
         void ConditionedStimulus(char color);
         void ConditionedStimulus(char color, bool playTone);
         void ConditionedStimulus(int duration, int freq);
-        void ConditionedStimulus(int duration, int freq, char color, bool playTone);
+        void ConditionedStimulus(int duration, int freq, char color, bool playTone, bool pixels_Off=true);
         void ConditionedStimulus_LED_ON(char color);
         void ConditionedStimulus_LED_OFF();
         void Click();

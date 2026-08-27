@@ -192,7 +192,7 @@ void FED3::Feed(bool pixelsoff, char color) {
     //If pellet is detected during or after this motion
     if (pelletDispensed == true) {
       BNC(TTLus, dispensed);  // TTL for dispensed
-      ConditionedStimulus(color);  // custom addition of stimulus on pellet delivery
+      ConditionedStimulus(200, 4000, color, true, pixelsoff);
       delay(50);  // For hopefully preventing CS breakage.
 
       ReleaseMotor ();
@@ -497,18 +497,18 @@ void FED3::ConditionedStimulus(int duration) {
 }
 
 void FED3::ConditionedStimulus(char color) {
-  ConditionedStimulus(200, 4000, color, true);
+  ConditionedStimulus(200, 4000, color, true, true);
 }
 
 void FED3::ConditionedStimulus(char color, bool playTone) {
-  ConditionedStimulus(200, 4000, color, playTone);
+  ConditionedStimulus(200, 4000, color, playTone, true);
 }
 
 void FED3::ConditionedStimulus(int duration, int freq) {
-  ConditionedStimulus(duration, freq, 'B', true);
+  ConditionedStimulus(duration, freq, 'B', true, true);
 }
 
-void FED3::ConditionedStimulus(int duration, int freq, char color, bool playTone) {
+void FED3::ConditionedStimulus(int duration, int freq, char color, bool playTone, bool pixels_Off) {
   int r=0;
   int g=0;
   int b=0;
@@ -565,7 +565,9 @@ void FED3::ConditionedStimulus(int duration, int freq, char color, bool playTone
   pixelsOn(r, g, b, w);  // default blue light
   BNC(TTLus, condStim);  // TTL for conditioned stimulus
   delay(duration);
-  pixelsOff();
+  if (pixels_Off) {
+    pixelsOff();
+  }
   noTone(BUZZER);
 }
 
@@ -1847,7 +1849,7 @@ void FED3::SelectMode() {
   if (FEDmode == 2) display.print("2: 2x2_Timed");
   if (FEDmode == 3) display.print("3: 5x5_Timed");
   if (FEDmode == 4) display.print("4: 80/20 DP/Hold Blocks");
-  if (FEDmode == 5) display.print("5: DualPort");
+  if (FEDmode == 5) display.print("5: Barbosa-48h");
   if (FEDmode == 6) display.print("6: Bellagio-48h");
   if (FEDmode == 7) display.print("7: FR-Split-48h-1:5");
   if (FEDmode == 8) display.print("8: RPR-Split-48h");
@@ -1938,7 +1940,7 @@ void FED3::ClassicMenu () {
   if (FEDmode == 2) display.print("2: 2x2_Timed");
   if (FEDmode == 3) display.print("3: 5x5_Timed");
   if (FEDmode == 4) display.print("4: 80/20 DP/Hold Blocks");
-  if (FEDmode == 5) display.print("5: DualPort");
+  if (FEDmode == 5) display.print("5: Barbosa-48h");
   if (FEDmode == 6) display.print("6: Bellagio-48h");
   if (FEDmode == 7) display.print("7: FR-Split-48h-1:5");
   if (FEDmode == 8) display.print("8: RPR-Split-48h");
