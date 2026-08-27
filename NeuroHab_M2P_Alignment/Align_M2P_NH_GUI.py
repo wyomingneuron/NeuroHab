@@ -5,7 +5,7 @@ without editing paths in code. Four regions:
 
     - header: title bar
     - left  : controls (file pickers, output folder, options, run buttons)
-    - right : data display (tabbed tables for the NH and M2P dataframes)
+    - right : data display (tabbed tables for the NH, M2P and FED3 dataframes)
     - bottom: console mirroring everything the pipeline prints or warns about
 
 No pipeline logic lives here — this module only calls align_pipeline.
@@ -50,6 +50,7 @@ CONSOLE_BG = "#111827"
 CONSOLE_FG = "#e5e7eb"
 
 NH_FILETYPES = [("CSV files", "*.csv"), ("All files", "*.*")]
+FED3_FILETYPES = [("CSV files", "*.csv"), ("All files", "*.*")]
 M2P_FILETYPES = [
     ("Sync files", "*.tdms *.xlsx *.xls"),
     ("TDMS files", "*.tdms"),
@@ -94,6 +95,7 @@ class AlignerApp:
 
         self._nh_path = tk.StringVar()
         self._m2p_path = tk.StringVar()
+        self._fed3_path = tk.StringVar()
         self._out_dir = tk.StringVar()
         self._drop_first_row = tk.BooleanVar(value=True)
         self._train_gap_ms = tk.StringVar(value="50")
@@ -101,6 +103,7 @@ class AlignerApp:
 
         self._nh_df: pd.DataFrame | None = None
         self._m2p_df: pd.DataFrame | None = None
+        self._fed3_df: pd.DataFrame | None = None
         self._busy = False
 
         self._apply_theme()
@@ -360,6 +363,20 @@ class AlignerApp:
                 self._m2p_path, "Select the M2P sync file", M2P_FILETYPES
             ),
         )
+        self._add_file_row(
+            files,
+            label="FED3 (.csv)  —  OPTIONAL",
+            variable=self._fed3_path,
+            command=lambda: self._browse_file(
+                self._fed3_path, "Select the FED3 CSV file", FED3_FILETYPES
+            ),
+        )
+        ttk.Button(
+            files,
+            text="Clear FED3",
+            style="Browse.TButton",
+            command=lambda: self._fed3_path.set(""),
+        ).pack(anchor="e", pady=(6, 0))
 
         output = ttk.LabelFrame(frame, text="  Output  ", padding=12)
         output.pack(fill=tk.X, pady=(12, 0))
@@ -413,9 +430,10 @@ class AlignerApp:
             frame,
             text=(
                 "1.  Pick the BNC CSV and the M2P sync file.\n"
-                "2.  Choose an output folder (optional).\n"
-                "3.  Load / Preview to check the data.\n"
-                "4.  Run Alignment to write the _synced.csv\n\n"
+                "2.  Add a FED3 CSV if you have one (optional).\n"
+                "3.  Choose an output folder (optional).\n"
+                "4.  Load / Preview to check the data.\n"
+                "5.  Run Alignment to write the _synced.csv\n\n"
                 f"Tables show the first {MAX_DISPLAY_ROWS} rows only."
             ),
             style="Hint.TLabel",
@@ -463,11 +481,14 @@ class AlignerApp:
 
         nh_tab = ttk.Frame(notebook, style="Card.TFrame", padding=2)
         m2p_tab = ttk.Frame(notebook, style="Card.TFrame", padding=2)
+        fed3_tab = ttk.Frame(notebook, style="Card.TFrame", padding=2)
         notebook.add(nh_tab, text="NeuroHab / BNC")
         notebook.add(m2p_tab, text="M2P sync")
+        notebook.add(fed3_tab, text="FED3")
 
         self._nh_table = self._build_table(nh_tab)
         self._m2p_table = self._build_table(m2p_tab)
+        self._fed3_table = self._build_table(fed3_tab)
 
         return frame
 
@@ -571,6 +592,11 @@ class AlignerApp:
                 messagebox.showerror("File not found", f"{label} file does not exist:\n{value}")
                 return False
 
+        fed3 = self._selected_fed3_path()
+        if fed3 and not Path(fed3).exists():
+            messagebox.showerror("File not found", f"FED3 file does not exist:\n{fed3}")
+            return False
+
         if self._parse_train_gap() is None:
             return False
 
@@ -601,13 +627,25 @@ class AlignerApp:
         chosen = self._out_dir.get().strip()
         return chosen or None
 
-    def _do_load(self) -> dict[str, Any]:
-        """Read both input files, applying the drop-first-row option.
+    def _selected_fed3_path(self) -> str | None:
+        """Return the chosen FED3 csv path, or None when the field is blank.
 
-        :return: Result payload with both dataframes.
+        :return: Path to the FED3 csv, or None to skip FED3 alignment.
+        """
+        chosen = self._fed3_path.get().strip()
+        return chosen or None
+
+    def _do_load(self) -> dict[str, Any]:
+        """Read the input files, applying the drop-first-row option.
+
+        :return: Result payload with the loaded dataframes; 'fed3' is None when
+            no FED3 file was selected.
         :raises ValueError: If the M2P file extension is unsupported.
         """
-        nh_df, m2p_df = pipeline.read_all(self._nh_path.get(), self._m2p_path.get())
+        fed3_path = self._selected_fed3_path()
+        nh_df, m2p_df, fed3_df = pipeline.read_all(
+            self._nh_path.get(), self._m2p_path.get(), fed3_path
+        )
 
         if self._drop_first_row.get():
             m2p_df = pipeline.drop_first_row(m2p_df)
@@ -615,7 +653,8 @@ class AlignerApp:
 
         print(f"BNC rows loaded : {len(nh_df)}")
         print(f"Sync rows loaded: {len(m2p_df)}")
-        return {"nh": nh_df, "m2p": m2p_df}
+        print(f"FED3 rows loaded: {len(fed3_df) if fed3_df is not None else 'not selected'}")
+        return {"nh": nh_df, "m2p": m2p_df, "fed3": fed3_df}
 
     def _do_align(self) -> dict[str, Any]:
         """Load the files and run the alignment, writing the synced CSV.
@@ -623,18 +662,24 @@ class AlignerApp:
         :return: Result payload with both dataframes.
         """
         loaded = self._do_load()
-        nh_df, m2p_df = loaded["nh"], loaded["m2p"]
+        nh_df, m2p_df, fed3_df = loaded["nh"], loaded["m2p"], loaded["fed3"]
 
         out_dir = self._selected_out_dir()
         print(f"Output folder   : {out_dir or 'alongside input files'}")
 
         print("\n--- Alignment ---")
         pipeline.align_to_M2P(
-            nh_df, m2p_df, self._nh_path.get(), self._m2p_path.get(), out_dir=out_dir
+            nh_df,
+            m2p_df,
+            self._nh_path.get(),
+            self._m2p_path.get(),
+            FED3_df=fed3_df,
+            FED3_p=self._selected_fed3_path(),
+            out_dir=out_dir,
         )
         print("\nDone.")
 
-        return {"nh": nh_df, "m2p": m2p_df}
+        return {"nh": nh_df, "m2p": m2p_df, "fed3": fed3_df}
 
     # --- Background execution ---
 
@@ -671,8 +716,10 @@ class AlignerApp:
         """
         self._nh_df = result["nh"]
         self._m2p_df = result["m2p"]
+        self._fed3_df = result["fed3"]
         self._populate_table(self._nh_table, self._nh_df)
         self._populate_table(self._m2p_table, self._m2p_df)
+        self._populate_table(self._fed3_table, self._fed3_df)
         self._set_busy(False, f"{label} finished.")
 
     def _on_failure(self, message: str) -> None:
@@ -723,13 +770,18 @@ class AlignerApp:
         self._console.see(tk.END)
         self._console.configure(state="disabled")
 
-    def _populate_table(self, tree: ttk.Treeview, df: pd.DataFrame) -> None:
+    def _populate_table(self, tree: ttk.Treeview, df: pd.DataFrame | None) -> None:
         """Render a dataframe into a Treeview.
 
         :param tree: Table to fill.
-        :param df: Dataframe to display; only the first MAX_DISPLAY_ROWS are shown.
+        :param df: Dataframe to display, or None to just clear the table; only
+            the first MAX_DISPLAY_ROWS are shown.
         """
         tree.delete(*tree.get_children())
+
+        if df is None:
+            tree["columns"] = ()
+            return
 
         columns = [str(c) for c in df.columns]
         tree["columns"] = columns
