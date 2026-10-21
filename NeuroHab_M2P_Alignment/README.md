@@ -1,6 +1,7 @@
 # NeuroHab / M2P Alignment
 
 Aligns NeuroHab (BNC) event timestamps — and optionally a FED3 log — to the M2P sync clock.
+Use fed3.setEvent("MySpecialEventLike-EnteredIdle"); fed3.logSpecialEvent(); - This sends a TTL pulse of 20 to align non behavior events with NeuroHab system and connected systems.
 
 Two files:
 
