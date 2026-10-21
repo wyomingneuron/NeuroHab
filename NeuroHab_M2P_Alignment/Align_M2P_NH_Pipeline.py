@@ -7,14 +7,17 @@ from datetime import datetime
 import warnings
 
 "FED3 event -> the BNC event logged for the same action (both lowercase)."
-"Only exact counterparts belong here. FED3 events missing from this map (PeriodStart,"
-"PeriodEnd, Redraw, RightEarly, ...) are special events, timed by interval to the"
-"nearest anchor. BNC-only events (TONE, LED, Dispensed, water) are ignored."
+"Only exact counterparts belong here. Every FED3 event missing from this map (PeriodStart,"
+"PeriodEnd, Redraw, RightEarly, ...) is a special event and pairs with BNC_SPECIAL_EVENT."
+"BNC-only events (TONE, LED, Dispensed, water) are ignored."
 "BNC pulse counts: Right 1, Left 2, Retrieved 4, RightWithPellet 11, LeftWithPellet 12,"
-"RightDuringDispense 13, LeftDuringDispense 14, RightinTimeOut 15, LeftinTimeOut 16."
+"RightDuringDispense 13, LeftDuringDispense 14, RightinTimeOut 15, LeftinTimeOut 16,"
+"SpecialEvent 20. RightShort/LeftShort pulse as Right/Left before FED3 relabels them."
 FED3_TO_BNC = {
     'right': 'right',
+    'rightshort': 'right',
     'left': 'left',
+    'leftshort': 'left',
     'pellet': 'retrieved',
     'rightwithpellet': 'rightwithpellet',
     'leftwithpellet': 'leftwithpellet',
@@ -23,6 +26,9 @@ FED3_TO_BNC = {
     'rightintimeout': 'rightintimeout',
     'leftintimeout': 'leftintimeout',
 }
+
+"BNC event (20 pulses) sent for every FED3 event outside FED3_TO_BNC."
+BNC_SPECIAL_EVENT = 'specialevent'
 
 FED3_EVENT_COL = 'Event'
 FED3_MS_COL = 'time_elapsed_ms'
@@ -38,8 +44,9 @@ FED3_MATCH_TOL_MS = 1000
 class FED3Mismatch:
     """A sample in one file with no partner of the same event type in the other."""
     event: str          # event label as written in the file holding the extra sample
+    group: str          # BNC event type the sample was paired under, e.g. 'SpecialEvent'
     side: str           # 'BNC' or 'FED3' — the file that is over
-    ordinal: int        # 1-based position among that file's events of this type
+    ordinal: int        # 1-based position among that file's events of this group
     row: int            # dataframe index of the extra row
     time_ms: float      # time on the FED3 clock (BNC rows shifted by the clock offset)
     at_end: bool = False
@@ -194,24 +201,41 @@ def _event_keys(events):
     return events.astype(str).str.strip().str.lower()
 
 
+def fed3_bnc_keys(FED3_df):
+    """
+    Maps every FED3 row to the BNC event it pulsed as.
+
+    Events in FED3_TO_BNC use their mapped BNC event; everything else is a special event.
+
+    :param FED3_df: FED3 dataframe
+    :return: Series of lowercase BNC event keys, indexed like FED3_df
+    """
+
+    return _event_keys(FED3_df[FED3_EVENT_COL]).map(FED3_TO_BNC).fillna(BNC_SPECIAL_EVENT)
+
+
 def group_fed3_events(NH_df, FED3_df):
     """
-    Collects the FED3 rows and BNC rows of every event type in FED3_TO_BNC.
+    Collects the FED3 rows and BNC rows of every BNC event type FED3 can pulse.
+
+    Grouping is by BNC event, so FED3 labels that share a pulse (Right and RightShort,
+    or every special event) are paired in log order against the same BNC rows.
 
     :param NH_df: NeuroHab dataframe
     :param FED3_df: FED3 dataframe
-    :return: dict of FED3 event key -> (FED3 row index, BNC row index), each in log order
+    :return: dict of BNC event key -> (FED3 row index, BNC row index), each in log order
     """
 
-    fed3_keys = _event_keys(FED3_df[FED3_EVENT_COL])
+    fed3_keys = fed3_bnc_keys(FED3_df)
     bnc_keys = _event_keys(NH_df[BNC_EVENT_COL])
+    bnc_keys[bnc_keys.str.startswith('*')] = BNC_SPECIAL_EVENT    # already relabelled by a previous run
 
     groups = {}
-    for fed3_key, bnc_key in FED3_TO_BNC.items():
-        fed3_idx = FED3_df.index[fed3_keys == fed3_key]
+    for bnc_key in dict.fromkeys([*FED3_TO_BNC.values(), BNC_SPECIAL_EVENT]):
+        fed3_idx = FED3_df.index[fed3_keys == bnc_key]
         bnc_idx = NH_df.index[bnc_keys == bnc_key]
         if len(fed3_idx) or len(bnc_idx):
-            groups[fed3_key] = (fed3_idx, bnc_idx)
+            groups[bnc_key] = (fed3_idx, bnc_idx)
 
     return groups
 
@@ -264,7 +288,7 @@ def find_over_sample(long_ms, short_ms):
     return int(len(cost) - 1 - np.argmin(cost[::-1]))
 
 
-def reconcile_event_type(NH_df, FED3_df, fed3_idx, bnc_idx, offset):
+def reconcile_event_type(NH_df, FED3_df, fed3_idx, bnc_idx, offset, group):
     """
     Pairs the nth FED3 event of one type with the nth BNC event of the same type.
 
@@ -277,6 +301,7 @@ def reconcile_event_type(NH_df, FED3_df, fed3_idx, bnc_idx, offset):
     :param fed3_idx: FED3 rows of this type, in log order
     :param bnc_idx: BNC rows of the matching type, in log order
     :param offset: FED3 minus BNC clock offset in ms
+    :param group: Display name of the BNC event type, e.g. 'SpecialEvent'
     :return: (list of (FED3 row, BNC row) pairs, list of FED3Mismatch)
     """
 
@@ -300,6 +325,7 @@ def reconcile_event_type(NH_df, FED3_df, fed3_idx, bnc_idx, offset):
         row = long_idx[pos]
         mismatches.append(FED3Mismatch(
             event=str(long_df.at[row, long_col]).strip(),
+            group=group,
             side='BNC' if bnc_over else 'FED3',
             ordinal=pos + 1,
             row=row,
@@ -365,6 +391,27 @@ def assign_anchor_times(NH_df, FED3_df, pairs, mismatches):
     return unsynced
 
 
+def label_bnc_special_events(NH_df, FED3_df, pairs):
+    """
+    Renames each paired BNC SpecialEvent after the FED3 event it stands for.
+
+    Format: '*<FED3 event> ln:<FED3 file line>', e.g. '*TrainingDraw_S1 ln:5'. The line
+    counts the header as line 1. Unpaired SpecialEvent rows keep their label.
+
+    :param NH_df: NeuroHab dataframe to relabel in place
+    :param FED3_df: FED3 dataframe as read from file (default index = data row number)
+    :param pairs: All (FED3 row, BNC row) pairs
+    :return: None
+    """
+
+    special = fed3_bnc_keys(FED3_df) == BNC_SPECIAL_EVENT
+
+    for fed3_row, bnc_row in pairs:
+        if special[fed3_row]:
+            label = str(FED3_df.at[fed3_row, FED3_EVENT_COL]).strip()
+            NH_df.at[bnc_row, BNC_EVENT_COL] = f"*{label} ln:{fed3_row + 2}"
+
+
 def fill_interval_times(FED3_df):
     """
     Times every non-anchor FED3 row from its closest anchor using the FED3 ms clock.
@@ -401,19 +448,37 @@ def fill_interval_times(FED3_df):
     return pd.Series(used, dtype=object)
 
 
-def report_fed3_counts(groups):
+def group_label(NH_df, bnc_key, bnc_idx):
+    """
+    Returns the BNC event name as written in the BNC file, for console output.
+
+    :param NH_df: NeuroHab dataframe
+    :param bnc_key: Lowercase BNC event key
+    :param bnc_idx: BNC rows of that event
+    :return: The first BNC row's label, or the key when BNC has none
+    """
+
+    return str(NH_df.at[bnc_idx[0], BNC_EVENT_COL]).strip() if len(bnc_idx) else bnc_key
+
+
+def report_fed3_counts(groups, labels, FED3_df):
     """
     Prints the per-type event counts in each file.
 
     :param groups: Output of group_fed3_events
+    :param labels: BNC event key -> display name
+    :param FED3_df: FED3 dataframe, used to list the FED3 labels in each group
     :return: None
     """
 
-    print("Event counts                     FED3 / BNC")
-    for fed3_key, (fed3_idx, bnc_idx) in groups.items():
-        label = f"{fed3_key} -> {FED3_TO_BNC[fed3_key]}"
+    fed3_events = FED3_df[FED3_EVENT_COL].astype(str).str.strip()
+
+    print("Event counts (BNC event <- FED3 events)          FED3 / BNC")
+    for bnc_key, (fed3_idx, bnc_idx) in groups.items():
+        fed3_labels = ', '.join(dict.fromkeys(fed3_events[fed3_idx])) or '-'
+        label = f"{labels[bnc_key]} <- {fed3_labels}"
         flag = '' if len(fed3_idx) == len(bnc_idx) else '   <- mismatch'
-        print(f"  {label:<30} {len(fed3_idx):>5} / {len(bnc_idx)}{flag}")
+        print(f"  {label:<46} {len(fed3_idx):>5} / {len(bnc_idx)}{flag}")
 
 
 def report_mismatches(mismatches, NH_df):
@@ -429,7 +494,8 @@ def report_mismatches(mismatches, NH_df):
 
     for m in sorted(mismatches, key=lambda m: m.time_ms):
         other = 'FED3' if m.side == 'BNC' else 'BNC'
-        where = f"{m.event} #{m.ordinal} over in {m.side} (under in {other}), {m.side} row {m.row}"
+        name = m.event if m.event.lower() == m.group.lower() else f"{m.event} ({m.group})"
+        where = f"{name} #{m.ordinal} over in {m.side} (under in {other}), {m.side} row {m.row}"
 
         if m.side == 'BNC' and m.event.lower() == 'right' and m.row == NH_df.index[-1]:
             warnings.warn(
@@ -447,13 +513,13 @@ def report_mismatches(mismatches, NH_df):
         )
         if m.reconciled:
             warnings.warn(
-                f"Mismatch {where} was removed and the remaining {m.event} events "
+                f"Mismatch {where} was removed and the remaining {m.group} events "
                 "reconciled. Check the data."
             )
         else:
             warnings.warn(
-                f"Mismatch {where} was removed but the remaining {m.event} events still "
-                f"don't line up within {FED3_MATCH_TOL_MS} ms. {m.event} alignment is unreliable."
+                f"Mismatch {where} was removed but the remaining {m.group} events still "
+                f"don't line up within {FED3_MATCH_TOL_MS} ms. {m.group} alignment is unreliable."
             )
 
 
@@ -478,29 +544,39 @@ def report_unsynced_anchors(unsynced, FED3_df):
     )
 
 
-def report_special_events(FED3_df, used):
+def report_special_events(FED3_df, used, legacy):
     """
-    Prints every FED3 event with no BNC counterpart and the anchor it was timed from.
+    Prints every special FED3 event and how it was timed.
+
+    Anchored specials took their SpecialEvent's M2P time. The rest were timed by interval
+    from the closest anchor.
 
     :param FED3_df: FED3 dataframe with synced_time assigned
     :param used: Output of fill_interval_times
+    :param legacy: True when the BNC file has no SpecialEvent pulses at all
     :return: None
     """
 
-    keys = _event_keys(FED3_df[FED3_EVENT_COL])
-    special = FED3_df.index[~keys.isin(list(FED3_TO_BNC))]
+    special = FED3_df.index[fed3_bnc_keys(FED3_df) == BNC_SPECIAL_EVENT]
+    anchored = int((FED3_df.loc[special, 'sync_method'] == 'anchor').sum())
 
-    print(f"\nSpecial events aligned by interval: {len(special)}")
+    print(f"\nSpecial events: {len(special)} — anchored {anchored}, by interval {len(special) - anchored}")
+    if legacy and len(special):
+        print("  No SpecialEvent pulses in the BNC file (older session) — all timed by interval.")
+
     for row in special:
         label = str(FED3_df.at[row, FED3_EVENT_COL]).strip()
-        if row not in used.index:
-            print(f"  {label:<20} row {row:<6} not synced — no anchor available")
-            continue
+        method = FED3_df.at[row, 'sync_method']
 
-        anchor_row = used[row]
-        delta = FED3_df.at[row, FED3_MS_COL] - FED3_df.at[anchor_row, FED3_MS_COL]
-        anchor_label = str(FED3_df.at[anchor_row, FED3_EVENT_COL]).strip()
-        print(f"  {label:<20} row {row:<6} {delta:+9.0f} ms from {anchor_label} (row {anchor_row})")
+        if method == 'anchor':
+            print(f"  {label:<20} row {row:<6} anchored to SpecialEvent")
+        elif row in used.index:
+            anchor_row = used[row]
+            delta = FED3_df.at[row, FED3_MS_COL] - FED3_df.at[anchor_row, FED3_MS_COL]
+            anchor_label = str(FED3_df.at[anchor_row, FED3_EVENT_COL]).strip()
+            print(f"  {label:<20} row {row:<6} {method}: {delta:+9.0f} ms from {anchor_label} (row {anchor_row})")
+        else:
+            print(f"  {label:<20} row {row:<6} not synced — no anchor available")
 
 
 def report_anchor_spread(FED3_df):
@@ -539,14 +615,19 @@ def report_fed3_summary(FED3_df, mismatches):
     """
 
     methods = FED3_df['sync_method'].value_counts()
-    special = int((~_event_keys(FED3_df[FED3_EVENT_COL]).isin(list(FED3_TO_BNC))).sum())
+    is_special = fed3_bnc_keys(FED3_df) == BNC_SPECIAL_EVENT
+    special_anchored = int((is_special & (FED3_df['sync_method'] == 'anchor')).sum())
+    special_interval = int(is_special.sum()) - special_anchored
 
     print(
         f"\nFED3 rows: {len(FED3_df)} — anchor {methods.get('anchor', 0)}, "
         f"interval {methods.get('interval', 0)}, mismatch {methods.get('mismatch', 0)}"
     )
     if not mismatches:
-        print(f"FED3 alignment OK: 0 mismatches, {special} special events aligned by interval.")
+        print(
+            f"FED3 alignment OK: 0 mismatches, {special_anchored} special events anchored, "
+            f"{special_interval} by interval."
+        )
     else:
         print(f"FED3 alignment has {len(mismatches)} mismatch(es) — see above.")
 
@@ -555,10 +636,12 @@ def align_fed3(NH_df, FED3_df):
     """
     Assigns synced_time to FED3 rows using the already-synced NeuroHab events.
 
-    FED3 events with an exact BNC counterpart (FED3_TO_BNC) are paired nth-to-nth per
-    event type and copy that BNC row's synced_time (anchors). Every other row is timed
-    from its closest anchor by the interval on the FED3 ms clock. Count mismatches are
-    located, removed and reported.
+    FED3 events are grouped by the BNC event they pulse as (FED3_TO_BNC; everything else
+    pulses BNC_SPECIAL_EVENT), paired nth-to-nth per group, and copy that BNC row's
+    synced_time (anchors). Rows left without a partner are timed from their closest
+    anchor by the interval on the FED3 ms clock. Count mismatches are located, removed
+    and reported. A BNC file with no SpecialEvent rows (sessions before the special-event
+    pulse existed) times every special event by interval instead.
 
     :param NH_df: NeuroHab dataframe with 'synced_time' already assigned
     :param FED3_df: FED3 dataframe to annotate in place
@@ -568,6 +651,11 @@ def align_fed3(NH_df, FED3_df):
     FED3_df.drop(columns=['synced_time', 'sync_method'], errors='ignore', inplace=True)
 
     groups = group_fed3_events(NH_df, FED3_df)
+    legacy = len(groups.get(BNC_SPECIAL_EVENT, ((), ()))[1]) == 0
+    if legacy:
+        groups.pop(BNC_SPECIAL_EVENT, None)
+    labels = {key: group_label(NH_df, key, bnc_idx) for key, (_, bnc_idx) in groups.items()}
+
     offset = estimate_clock_offset(NH_df, FED3_df, groups)
 
     if np.isnan(offset):
@@ -579,8 +667,10 @@ def align_fed3(NH_df, FED3_df):
     print(f"FED3 clock offset (FED3 ms - BNC millis): {offset / 1000:.3f} s\n")
 
     pairs, mismatches = [], []
-    for fed3_idx, bnc_idx in groups.values():
-        type_pairs, type_mismatches = reconcile_event_type(NH_df, FED3_df, fed3_idx, bnc_idx, offset)
+    for bnc_key, (fed3_idx, bnc_idx) in groups.items():
+        type_pairs, type_mismatches = reconcile_event_type(
+            NH_df, FED3_df, fed3_idx, bnc_idx, offset, labels[bnc_key]
+        )
         pairs += type_pairs
         mismatches += type_mismatches
     flag_end_mismatches(mismatches, pairs, FED3_df)
@@ -588,12 +678,14 @@ def align_fed3(NH_df, FED3_df):
     unsynced = assign_anchor_times(NH_df, FED3_df, pairs, mismatches)
     used = fill_interval_times(FED3_df)
 
-    report_fed3_counts(groups)
+    report_fed3_counts(groups, labels, FED3_df)
     report_mismatches(mismatches, NH_df)
     report_unsynced_anchors(unsynced, FED3_df)
-    report_special_events(FED3_df, used)
+    report_special_events(FED3_df, used, legacy)
     report_anchor_spread(FED3_df)
     report_fed3_summary(FED3_df, mismatches)
+
+    label_bnc_special_events(NH_df, FED3_df, pairs)
 
     return FED3_df
 
@@ -689,8 +781,8 @@ if __name__ == "__main__":
 
     NH, M2P, FED3 = read_all(NH_path, M2P_path, FED3_path)
 
-    "Set to False to keep the first row of the M2P/tdms file."
-    DROP_FIRST_ROW = True
+    "Set to True to drop the first row of the M2P/tdms file (spurious startup pulse)."
+    DROP_FIRST_ROW = False
 
     if DROP_FIRST_ROW:
         M2P = drop_first_row(M2P)

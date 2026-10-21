@@ -97,7 +97,7 @@ class AlignerApp:
         self._m2p_path = tk.StringVar()
         self._fed3_path = tk.StringVar()
         self._out_dir = tk.StringVar()
-        self._drop_first_row = tk.BooleanVar(value=True)
+        self._drop_first_row = tk.BooleanVar(value=False)
         self._train_gap_ms = tk.StringVar(value="50")
         self._status = tk.StringVar(value="Ready.")
 
