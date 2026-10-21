@@ -1,0 +1,10 @@
+date,time,millis,event,pulseCount,rightCount,leftCount,dispensedCount,retrievedCount,rightWaterCount,leftWaterCount,LEDCount,toneCount,frontWaterCount,waterDispensedCount,rightWD_QTY,leftWD_QTY,frontWD_QTY,totalWD_QTY,rightWithPelletCount,leftWithPelletCount,rightDuringDispenseCount,leftDuringDispenseCount,rightinTimeoutCount,leftinTimeoutCount,SpecialEventCount
+10/19/2026,9:05:35,139288.33,SpecialEvent,20,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1
+10/19/2026,9:05:36,140945.71,TONE,8,2,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1
+10/19/2026,9:05:37,141021.24,LED,7,2,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1
+10/19/2026,9:05:44,148036.04,LeftDuringDispense,14,2,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,1,0,0,1
+10/19/2026,9:05:58,162254.18,Dispensed,3,2,0,1,0,0,0,1,1,0,0,0,0,0,0,0,0,0,1,0,0,1
+10/19/2026,9:05:58,162317.2,TONE,8,2,0,1,0,0,0,1,2,0,0,0,0,0,0,0,0,0,1,0,0,1
+10/19/2026,9:05:58,162392.74,LED,7,2,0,1,0,0,0,2,2,0,0,0,0,0,0,0,0,0,1,0,0,1
+10/19/2026,9:06:03,167128.45,Retrieved,4,2,0,1,1,0,0,2,2,0,0,0,0,0,0,0,0,0,1,0,0,1
+10/19/2026,9:06:03,167570.92,SpecialEvent,20,2,0,1,1,0,0,2,2,0,0,0,0,0,0,0,0,0,1,0,0,2
