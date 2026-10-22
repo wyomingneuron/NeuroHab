@@ -65,6 +65,7 @@ int RDD = 0;
 int LDD = 0;
 int RIT = 0;
 int LIT = 0;
+int SPEC = 0;  // Special Event at 20
 
 // screen variables
 int mousePos = 15;
@@ -639,7 +640,7 @@ void writeHeader(String file_name) {
   // Serial.println("Writing header to file...");
   File file = SD.open(file_name, FILE_WRITE);
 
-  file.println("date,time,millis,event,pulseCount,rightCount,leftCount,dispensedCount,retrievedCount,rightWaterCount,leftWaterCount,LEDCount,toneCount,frontWaterCount,waterDispensedCount,rightWD_QTY,leftWD_QTY,frontWD_QTY,totalWD_QTY,rightWithPelletCount,leftWithPelletCount,rightDuringDispenseCount,leftDuringDispenseCount,rightinTimeoutCount,leftinTimeoutCount");
+  file.println("date,time,millis,event,pulseCount,rightCount,leftCount,dispensedCount,retrievedCount,rightWaterCount,leftWaterCount,LEDCount,toneCount,frontWaterCount,waterDispensedCount,rightWD_QTY,leftWD_QTY,frontWD_QTY,totalWD_QTY,rightWithPelletCount,leftWithPelletCount,rightDuringDispenseCount,leftDuringDispenseCount,rightinTimeoutCount,leftinTimeoutCount,SpecialEventCount");
 
   file.close();
   // Serial.println("Complete.");
@@ -710,6 +711,8 @@ void writeEntry(String file_name, uint64_t timestamp, const char* event, int pul
   file.print(RIT);
   file.print(",");
   file.print(LIT);
+  file.print(",");
+  file.print(SPEC);
   file.println(",");
 
   file.close();
@@ -787,6 +790,8 @@ void writeEntryBatch(String file_name, uint64_t timestamps[buffer_size], const c
     file.print(RIT);
     file.print(",");
     file.print(LIT);
+    file.print(",");
+    file.print(SPEC);
     file.println(",");
   }
 
@@ -870,6 +875,8 @@ void writeEntryBatch(String file_name, uint64_t timestamps[buffer_size], const c
     file.print(RIT);
     file.print(",");
     file.print(LIT);
+    file.print(",");
+    file.print(SPEC);
     file.println(",");
   }
 
@@ -1230,6 +1237,13 @@ void checkForPulses() {
           printCounts = 16;
           LIT += 1;
           events[i] = "LeftinTimeOut";
+        }
+
+        else if (local_pulseCounts[0][i] == 20) {
+          printStr = "SPEC";
+          printCounts = 20;
+          SPEC += 1;
+          events[i] = "SpecialEvent";
         }
       }
 
