@@ -89,6 +89,7 @@ class FED3 {
         File stopfile;      // Create another file object
         char filename[21];  // Array for file name data logged to named in setup
         void logdata();
+        void logSpecialEvent();
         void CreateFile();
         void CreateDataFile ();
         void writeHeader();
@@ -230,6 +231,7 @@ class FED3 {
         const int leftDurDisp = 14;     // NeuroHab TTL Encoding
         const int rightInTimeout = 15;  // NeuroHab TTL Encoding
         const int leftInTimeout = 16;   // NeuroHab TTL Encoding
+        const int specialEvent = 20;    // NeuroHab TTL Encoding
         
         uint64_t t1 = 0;  // Useed for latency benchmarking.
         uint64_t t2 = 0;

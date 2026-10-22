@@ -143,6 +143,18 @@ void FED3::logRightPoke(){
   }
 }
 
+//log an event like "RightEarly" that requires a TTL pulse for BNC synchronization. Use setEvent("event name"); to log a specific name for the event: Default "SpecialEvent" or last set event.
+void FED3::logSpecialEvent() {
+  BNC(TTLus, specialEvent);  // TTL for left poke
+  
+  if (Event == "None") {
+    Event = "SpecialEvent";
+  }
+
+  logdata();
+  UpdateDisplay();
+}
+
 void FED3::randomizeActivePoke(int max){
   //Store last active side and randomize
   byte lastActive = activePoke;
