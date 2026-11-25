@@ -300,6 +300,9 @@ void NH_Control::log_event(const char* event) {
     else if (strcmp(event, "WD") == 0)  { pulseCount = WD; }
     else if (strcmp(event, "LED") == 0)  { pulseCount = LED; }
     else if (strcmp(event, "TONE") == 0)  { pulseCount = TONE; }
+    else if (strcmp(event, "SPEC") == 0)  { pulseCount = SPEC; }
+    else if (strcmp(event, "RP") == 0)  { pulseCount = RP; }
+    else if (strcmp(event, "LP") == 0)  { pulseCount = LP; }
 
     if (pulseCount == -1) { return; }
 

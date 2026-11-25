@@ -123,13 +123,16 @@ class NH_Control {
 		float FW_delivered = 0;
 
 		// Encoding, pulsed to the logger.
+		const int RP = 1;								// Encoding for right poke (ESP logs pulseCount 1 as "Right").
+		const int LP = 2;								// Encoding for left poke (ESP logs pulseCount 2 as "Left").
 		const int RW = 5;
 		const int LW = 6;
 		const int LED = 7;
 		const int TONE = 8;
 		const int FW = 9;
 		const int WD = 10;								// Encoding for water dispensed.
-		const int PULSE_SEPAR_DELAY_MS = 60;			// The delay after pulsing to prevent overlap in pulses within the logger.
+		const int SPEC = 20;							// Encoding for special event (ESP logs pulseCount 20 as "SpecialEvent").
+		const int PULSE_SEPAR_DELAY_MS = 60;			// 60 Default The delay after pulsing to prevent overlap in pulses within the logger.
 		float lickTime = 130 - PULSE_SEPAR_DELAY_MS;	// How long the lickport valve is open before closing. Pulse delay to account for pulse time while valve is open.
 
 		const int pulse_delay_micros = 500;				// Time between pulses.
