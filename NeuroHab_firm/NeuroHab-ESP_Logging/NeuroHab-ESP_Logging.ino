@@ -77,7 +77,7 @@ int clearMillis = 0;
 int clearTimeout = 10000;
 
 const int BATCH_WRITE_TIMEOUT_MICROS = 60000;  // << NEEDS TO BE GREATER THAN BOX_BNC_TIMEOUT_MICROS // The time required to elapse before buffers are switched if any buffer is not empty.
-const int BOX_BNC_TIMEOUT_MICROS = 40000;      // << NEEDS TO BE LESS THAN BATCH_WRITE_TIMEOUT_MICROS and GREATER THAN BNC_TIMEOUT_MICROS // The pulse count timeout for NeuroHab events. If it takes longer than this to pulse
+const int BOX_BNC_TIMEOUT_MICROS = 40000;      // Default 40000 Should be about half of the .h PULSE_SEPAR_DELAY_MS << NEEDS TO BE LESS THAN BATCH_WRITE_TIMEOUT_MICROS and GREATER THAN BNC_TIMEOUT_MICROS // The pulse count timeout for NeuroHab events. If it takes longer than this to pulse
 const int BNC_TIMEOUT_MICROS = 1000;           // << NEEDS TO BE SMALL BUT GREATER THAN MIN_PULSE_TIME_MICROS // The pulse count timeout for non-NeuroHab external BNC events.
 const int MIN_PULSE_TIME_MICROS = 400;         // Error check value for how long a pulse must be to be considered a valid recordable pulse.
 
@@ -1277,8 +1277,153 @@ void lcdManualClear() {
   lcd.println("                ");
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   SD LOG TRANSFER OVER SERIAL  (added — self-contained, nothing above changed)
+   Protocol (PC -> ESP, newline terminated):
+     #LIST            -> <LIST>\n  F,/NH_3/BNC_1.csv,<bytes>,<live 0|1>\n ...  </LIST>\n
+     #GET /NH_3/X.csv -> <FILE,/NH_3/X.csv,<bytes>>\n <raw bytes> <END,<crc32 hex>>\n
+     #ABORT           -> stops an in-progress transfer, replies <ERR,aborted>
+   Errors: <ERR,message>\n.  Files in the live session folder (dirname) are refused.
+   Idle cost: one Serial.available() check per loop. While sending, at most
+   XFER_CHUNK_MAX bytes are written per loop so pulse logging keeps running.
+═══════════════════════════════════════════════════════════════════════════ */
+#define ESP_SERIAL_BAUD 921600  // << change for testing; must match the desktop app's "ESP32 baud rate" setting.
+#define XFER_CHUNK_MAX 128      // bytes per loop() pass (UART hardware FIFO is 128 bytes).
+
+void handleSerialTransfer() {
+  static bool active = false;
+  static File xferFile;
+  static uint32_t remaining = 0;
+  static uint32_t crc = 0;
+  static char cmdBuf[96];
+  static uint8_t cmdLen = 0;
+
+  // Fast path: nothing to do.
+  if (!active && !Serial.available()) {
+    return;
+  }
+
+  // CRC-32 (IEEE, same as zlib), 16-entry nibble table.
+  static const uint32_t crcTable[16] = {
+    0x00000000, 0x1DB71064, 0x3B6E20C8, 0x26D930AC, 0x76DC4190, 0x6B6B51F4, 0x4DB26158, 0x5005713C,
+    0xEDB88320, 0xF00F9344, 0xD6D6A3E8, 0xCB61B38C, 0x9B64C2B0, 0x86D3D2D4, 0xA00AE278, 0xBDBDF21C
+  };
+
+  auto stopTransfer = [&]() {
+    if (xferFile) { xferFile.close(); }
+    active = false;
+    remaining = 0;
+  };
+
+  auto listFiles = [&]() {
+    File root = SD.open("/");
+    if (!root) {
+      Serial.print("<ERR,cannot open SD root>\n");
+      return;
+    }
+    Serial.print("<LIST>\n");
+    File dir;
+    char dname[64];
+    char fname[64];
+    while (dir.openNext(&root, O_RDONLY)) {
+      if (dir.isDir()) {
+        dir.getName(dname, sizeof(dname));
+        if (strncmp(dname, "NH_", 3) == 0) {  // only NeuroHab session folders
+          bool live = (strcmp(dname, dirname + 1) == 0);  // dirname is "/NH_n"
+          File f;
+          while (f.openNext(&dir, O_RDONLY)) {
+            if (!f.isDir()) {
+              f.getName(fname, sizeof(fname));
+              Serial.printf("F,/%s/%s,%lu,%d\n", dname, fname, (unsigned long)f.fileSize(), live ? 1 : 0);
+            }
+            f.close();
+          }
+        }
+      }
+      dir.close();
+    }
+    root.close();
+    Serial.print("</LIST>\n");
+  };
+
+  auto startTransfer = [&](const char* path) {
+    char livePrefix[40];
+    snprintf(livePrefix, sizeof(livePrefix), "%s/", dirname);
+    if (path[0] != '/') {
+      Serial.print("<ERR,bad path>\n");
+      return;
+    }
+    if (strncmp(path, livePrefix, strlen(livePrefix)) == 0) {
+      Serial.print("<ERR,live session - transfer refused>\n");
+      return;
+    }
+    xferFile = SD.open(path, O_RDONLY);
+    if (!xferFile || xferFile.isDir()) {
+      if (xferFile) { xferFile.close(); }
+      Serial.print("<ERR,cannot open file>\n");
+      return;
+    }
+    remaining = xferFile.fileSize();
+    crc = 0xFFFFFFFF;
+    Serial.printf("<FILE,%s,%lu>\n", path, (unsigned long)remaining);
+    active = true;
+  };
+
+  // 1) Read any incoming command bytes (non-blocking).
+  while (Serial.available()) {
+    char c = (char)Serial.read();
+    if (c == '\r') { continue; }
+    if (c != '\n') {
+      if (cmdLen < sizeof(cmdBuf) - 1) { cmdBuf[cmdLen++] = c; }
+      continue;
+    }
+    cmdBuf[cmdLen] = '\0';
+    cmdLen = 0;
+
+    if (strcmp(cmdBuf, "#ABORT") == 0) {
+      if (active) {
+        stopTransfer();
+        Serial.print("\n<ERR,aborted>\n");
+      }
+    } else if (!active) {  // while sending, ignore LIST/GET so no text lands inside the binary stream
+      if (strcmp(cmdBuf, "#LIST") == 0) {
+        listFiles();
+      } else if (strncmp(cmdBuf, "#GET ", 5) == 0) {
+        startTransfer(cmdBuf + 5);
+      }
+    }
+  }
+
+  // 2) Send the next chunk of an active transfer.
+  if (active) {
+    if (remaining > 0) {
+      int room = Serial.availableForWrite();
+      if (room < 32) { room = 32; }  // fallback if the core reports 0; blocks at most ~0.3 ms
+      if (room > XFER_CHUNK_MAX) { room = XFER_CHUNK_MAX; }
+      uint32_t n = ((uint32_t)room < remaining) ? (uint32_t)room : remaining;
+
+      uint8_t buf[XFER_CHUNK_MAX];
+      int got = xferFile.read(buf, n);
+      if (got <= 0) {
+        stopTransfer();  // PC detects this as a stall/size mismatch.
+        return;
+      }
+      for (int i = 0; i < got; i++) {
+        crc = crcTable[(crc ^ buf[i]) & 0x0F] ^ (crc >> 4);
+        crc = crcTable[(crc ^ (buf[i] >> 4)) & 0x0F] ^ (crc >> 4);
+      }
+      Serial.write(buf, got);
+      remaining -= got;
+    }
+    if (remaining == 0) {
+      stopTransfer();
+      Serial.printf("<END,%08lX>\n", (unsigned long)(crc ^ 0xFFFFFFFF));
+    }
+  }
+}
+
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(ESP_SERIAL_BAUD);
 
   // Initialize LCD
   Serial.println("Initializing LCD...");
@@ -1418,4 +1563,6 @@ void loop() {
   }
 
   checkForPulses();
+
+  handleSerialTransfer();  // returns immediately unless a command arrived or a transfer is running
 }
