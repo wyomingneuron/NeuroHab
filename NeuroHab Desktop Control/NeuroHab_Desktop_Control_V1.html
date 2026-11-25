@@ -250,6 +250,12 @@ body{font-family:var(--font-sans);background:var(--bg-base);color:var(--text-bod
 .settings-select:focus{outline:none;border-color:var(--accent)}
 .settings-divider{border:none;border-top:1px solid var(--border);margin:3px 0}
 
+.xfer-select{flex:1;min-width:160px;max-width:340px;background:var(--bg-input);border:1px solid var(--border);color:var(--text-body);font-size:11px;font-family:var(--font-mono);padding:3px 7px;border-radius:5px;outline:none;cursor:pointer}
+.xfer-select:focus{border-color:var(--accent)}
+.xfer-select:disabled{opacity:.35;cursor:not-allowed}
+.xfer-status{margin-top:7px;font-size:10px;color:var(--text-faint);font-family:var(--font-mono);display:flex;align-items:center;gap:7px}
+.xfer-bar{width:120px;height:5px;background:var(--border);border-radius:3px;overflow:hidden;flex-shrink:0}
+.xfer-fill{height:100%;background:var(--purple);transition:width .1s}
 /* toast */
 .toast{position:fixed;bottom:50px;left:50%;transform:translateX(-50%);background:var(--bg-surface);border:1px solid var(--border);border-radius:7px;padding:7px 15px;font-size:12px;color:var(--text-body);box-shadow:0 8px 24px #00000060;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9999;white-space:nowrap}
 .toast.show{opacity:1}
@@ -673,6 +679,14 @@ body{font-family:var(--font-sans);background:var(--bg-base);color:var(--text-bod
       </div>
       <hr class="settings-divider">
       <div class="settings-row">
+        <div><div class="settings-row-label">ESP32 baud rate</div><div class="settings-row-sub">Log transfer link — must match ESP_SERIAL_BAUD in firmware</div></div>
+        <select class="settings-select" id="settings-esp-baud-select" onchange="state.espBaudRate=parseInt(this.value);addGlobalLog(0,'SYS',`ESP32 baud → ${this.value} (reconnect ESP32 to apply)`,'system')">
+          <option value="9600">9600</option><option value="115200">115200</option><option value="230400">230400</option>
+          <option value="460800">460800</option><option value="921600" selected>921600</option>
+        </select>
+      </div>
+      <hr class="settings-divider">
+      <div class="settings-row">
         <div><div class="settings-row-label">Serial API mode</div><div class="settings-row-sub">Web Serial API <span id="serial-api-status">checking…</span></div></div>
         <select class="settings-select" disabled><option>Auto-detect</option></select>
       </div>
@@ -928,14 +942,16 @@ const prog = {
 ═══════════════════════════════════════════════════ */
 const MOCK_PORTS=['COM3','COM4','COM5','COM6','COM7','COM8','/dev/ttyUSB0','/dev/ttyUSB1','/dev/ttyACM0','/dev/ttyACM1'];
 const hasWebSerial='serial' in navigator;
+// ESP32 log-transfer baud. Must match ESP_SERIAL_BAUD in NeuroHab-ESP_Logging.ino (also changeable in Settings).
+const ESP_DEFAULT_BAUD=921600;
 
 const state = {
   devices:[
-    {id:0,name:'NeuroHab 1',arduino:{port:null,connected:false,running:false,portObj:null,readerRef:null},esp32:{port:null,connected:false,portObj:null},fed3:{port:null,connected:false,running:false,portObj:null,readerRef:null},log:[]},
-    {id:1,name:'NeuroHab 2',arduino:{port:null,connected:false,running:false,portObj:null,readerRef:null},esp32:{port:null,connected:false,portObj:null},fed3:{port:null,connected:false,running:false,portObj:null,readerRef:null},log:[]},
-    {id:2,name:'NeuroHab 3',arduino:{port:null,connected:false,running:false,portObj:null,readerRef:null},esp32:{port:null,connected:false,portObj:null},fed3:{port:null,connected:false,running:false,portObj:null,readerRef:null},log:[]}
+    {id:0,name:'NeuroHab 1',arduino:{port:null,connected:false,running:false,portObj:null,readerRef:null},esp32:{port:null,connected:false,portObj:null,readerRef:null,files:[],selected:'',xfer:null},fed3:{port:null,connected:false,running:false,portObj:null,readerRef:null},log:[]},
+    {id:1,name:'NeuroHab 2',arduino:{port:null,connected:false,running:false,portObj:null,readerRef:null},esp32:{port:null,connected:false,portObj:null,readerRef:null,files:[],selected:'',xfer:null},fed3:{port:null,connected:false,running:false,portObj:null,readerRef:null},log:[]},
+    {id:2,name:'NeuroHab 3',arduino:{port:null,connected:false,running:false,portObj:null,readerRef:null},esp32:{port:null,connected:false,portObj:null,readerRef:null,files:[],selected:'',xfer:null},fed3:{port:null,connected:false,running:false,portObj:null,readerRef:null},log:[]}
   ],
-  globalLog:[], baudRate:9600, logLimit:50
+  globalLog:[], baudRate:9600, espBaudRate:ESP_DEFAULT_BAUD, logLimit:50
 };
 
 // ── INIT ──────────────────────────────────────────
@@ -1852,7 +1868,8 @@ async function connectMicro(deviceId,type){
   if(micro.connected){
     micro.connected=false;
     if(type==='arduino'||type==='fed3')micro.running=false;
-    if((type==='arduino'||type==='fed3')&&micro.readerRef){
+    if(type==='esp32')espClearXfer(deviceId);
+    if(micro.readerRef){
       try{await micro.readerRef.cancel();}catch{}
       micro.readerRef=null;
     }
@@ -1865,12 +1882,14 @@ async function connectMicro(deviceId,type){
   if(hasWebSerial){
     try{
       const port=await navigator.serial.requestPort();
-      await port.open({baudRate:state.baudRate});
+      const baud=type==='esp32'?state.espBaudRate:state.baudRate;
+      await port.open(type==='esp32'?{baudRate:baud,bufferSize:65536}:{baudRate:baud});
       micro.portObj=port;micro.connected=true;micro.port='Web Serial';
       const label=type==='arduino'?'Arduino':type==='esp32'?'ESP32':'FED3';
-      addSysLog(deviceId,`${label} connected via Web Serial @ ${state.baudRate}`);
+      addSysLog(deviceId,`${label} connected via Web Serial @ ${baud}`);
       if(type==='arduino')startSerialReader(deviceId);
       if(type==='fed3')startFED3SerialReader(deviceId);
+      if(type==='esp32'){startESPSerialReader(deviceId);setTimeout(()=>espRequestList(deviceId),300);}
     }catch(e){if(e.name!=='NotFoundError')addSysLog(deviceId,`Connection failed: ${e.message}`);}
   } else {
     const mockIdx=type==='arduino'?0:type==='esp32'?1:2;
@@ -1881,6 +1900,7 @@ async function connectMicro(deviceId,type){
       setTimeout(()=>addLog(deviceId,'RX','[BOOT] NeuroHab block program ready','arduino'),400);
       setTimeout(()=>addLog(deviceId,'RX','[STOPPED]','arduino'),500);
     }
+    if(type==='esp32')setTimeout(()=>espRequestList(deviceId),300);
     if(type==='fed3'){
       setTimeout(()=>addLog(deviceId,'RX','[BOOT] FED3 block program ready','fed3'),400);
       setTimeout(()=>addLog(deviceId,'RX','[STOPPED]','fed3'),450);
@@ -2095,6 +2115,210 @@ function scanPorts(){
   else state.devices.forEach((_,i)=>addSysLog(i,'Simulated: found ports '+MOCK_PORTS.slice(0,4).join(', ')));
 }
 
+/* ═══════════════════════════════════════════════════
+   ESP32 SD LOG TRANSFER
+   PC -> ESP:  #LIST | #GET /NH_n/file.csv | #ABORT
+   ESP -> PC:  <LIST> F,path,size,live ... </LIST>
+               <FILE,path,size> <raw bytes> <END,crc32hex>
+               <ERR,msg>
+   Verified by byte count AND CRC-32 before the file is saved.
+═══════════════════════════════════════════════════ */
+const ESP_XFER_STALL_MS=4000;
+const CRC32_TABLE=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
+function crc32(buf){let c=0xFFFFFFFF;for(let i=0;i<buf.length;i++)c=CRC32_TABLE[(c^buf[i])&0xFF]^(c>>>8);return(c^0xFFFFFFFF)>>>0;}
+function fmtBytes(n){return n<1024?`${n} B`:n<1048576?`${(n/1024).toFixed(1)} KB`:`${(n/1048576).toFixed(2)} MB`;}
+function escAttr(s){return escHtml(s).replace(/"/g,'&quot;');}
+
+function renderEspXferControls(dev){
+  const esp=dev.esp32,conn=esp.connected,busy=!!esp.xfer;
+  const opts=esp.files.length
+    ?esp.files.map(f=>`<option value="${escAttr(f.path)}"${f.path===esp.selected?' selected':''}${f.live?' disabled':''}>${escHtml(f.path.slice(1))} · ${fmtBytes(f.size)}${f.live?' (live)':''}</option>`).join('')
+    :`<option value="">${conn?'No logs listed — refresh':'Connect ESP32'}</option>`;
+  const sel=esp.files.find(f=>f.path===esp.selected);
+  return`<select class="xfer-select" id="esp-file-sel-${dev.id}" onchange="state.devices[${dev.id}].esp32.selected=this.value;renderDevices()" ${!conn||busy?'disabled':''}>${opts}</select>
+        <button class="action-btn reset" onclick="espRequestList(${dev.id})" title="Refresh file list" ${!conn||busy?'disabled':''}><i class="ti ti-refresh"></i></button>
+        ${busy
+          ?`<button class="action-btn stop" onclick="espXferFail(${dev.id},'cancelled by user')"><i class="ti ti-x"></i> Cancel</button>`
+          :`<button class="action-btn start" onclick="espTransfer(${dev.id})" ${!conn||!sel||sel.live?'disabled':''}><i class="ti ti-download"></i> Transfer</button>`}`;
+}
+
+function espXferStatusHtml(dev){
+  const esp=dev.esp32,x=esp.xfer;
+  if(x){
+    const pct=x.size?Math.floor(x.got/x.size*100):0;
+    const sizeTxt=x.size===null?'waiting for ESP32…':`${fmtBytes(x.got)} / ${fmtBytes(x.size)} (${pct}%)`;
+    return`<div class="xfer-bar"><div class="xfer-fill" style="width:${pct}%"></div></div><span>${escHtml(x.path.slice(1))} · ${sizeTxt}</span>`;
+  }
+  if(esp.lastResult)return`<span style="color:${esp.lastResult.ok?'var(--green-text)':'var(--red-text)'}">${escHtml(esp.lastResult.msg)}</span>`;
+  return esp.connected?`<span style="color:var(--text-faintest)">${esp.files.length} log file${esp.files.length===1?'':'s'} on SD · live session locked</span>`
+                      :`<span style="color:var(--text-faintest)">Connect to list SD logs</span>`;
+}
+
+function espUpdateXferStatus(deviceId,force){
+  const esp=state.devices[deviceId].esp32,x=esp.xfer,now=performance.now();
+  if(!force&&x&&now-(x.lastPaint||0)<100)return;
+  if(x)x.lastPaint=now;
+  const el=document.getElementById(`esp-xfer-status-${deviceId}`);
+  if(el)el.innerHTML=espXferStatusHtml(state.devices[deviceId]);
+}
+
+async function sendRawToESP(deviceId,text){
+  const esp=state.devices[deviceId].esp32;
+  addLog(deviceId,'TX',text,'esp32');
+  if(!esp.portObj)return;
+  try{const w=esp.portObj.writable.getWriter();await w.write(new TextEncoder().encode(text+'\n'));w.releaseLock();}
+  catch(e){addSysLog(deviceId,`ESP32 send error: ${e.message}`);}
+}
+
+function espRequestList(deviceId){
+  const esp=state.devices[deviceId].esp32;
+  if(!esp.connected||esp.xfer)return;
+  if(!esp.portObj){ // simulation mode
+    esp.files=[{path:'/NH_1/BNC_1.csv',size:135108,live:false},{path:'/NH_1/BNC_2.csv',size:340,live:false},{path:'/NH_2/BNC_1.csv',size:431,live:true}];
+    if(!esp.selected)esp.selected=esp.files[0].path;
+    renderDevices();return;
+  }
+  sendRawToESP(deviceId,'#LIST');
+}
+
+function espTransfer(deviceId){
+  const esp=state.devices[deviceId].esp32;
+  if(!esp.connected||esp.xfer)return;
+  const f=esp.files.find(f=>f.path===esp.selected);
+  if(!f){showToast('Select a file first','var(--red-text)');return;}
+  if(f.live){showToast('Live session files cannot be transferred','var(--red-text)');return;}
+  if(!esp.portObj){showToast('Simulation mode — no ESP32 attached','var(--running-color)');return;}
+  esp.lastResult=null;
+  esp.xfer={path:f.path,listedSize:f.size,size:null,got:0,buf:null,phase:'header',t0:performance.now(),lastRx:Date.now()};
+  esp.xfer.watchdog=setInterval(()=>{
+    const x=esp.xfer;if(!x)return;
+    if(Date.now()-x.lastRx>ESP_XFER_STALL_MS)espXferFail(deviceId,`stalled at ${fmtBytes(x.got)}${x.size!==null?' / '+fmtBytes(x.size):''} (no data for ${ESP_XFER_STALL_MS/1000}s)`);
+  },500);
+  renderDevices();
+  sendRawToESP(deviceId,'#GET '+f.path);
+}
+
+function espClearXfer(deviceId){
+  const esp=state.devices[deviceId].esp32;
+  if(esp.xfer&&esp.xfer.watchdog)clearInterval(esp.xfer.watchdog);
+  esp.xfer=null;
+}
+
+function espXferFail(deviceId,reason){
+  const esp=state.devices[deviceId].esp32;if(!esp.xfer)return;
+  const path=esp.xfer.path;
+  espClearXfer(deviceId);
+  sendRawToESP(deviceId,'#ABORT');
+  esp.lastResult={ok:false,msg:`✗ ${path.slice(1)} failed: ${reason}`};
+  addSysLog(deviceId,`Transfer FAILED ${path}: ${reason}`);
+  showToast('Transfer failed — see log','var(--red-text)');
+  renderDevices();
+}
+
+function espXferFinish(deviceId,crcHex){
+  const esp=state.devices[deviceId].esp32,x=esp.xfer;
+  const crcDev=parseInt(crcHex,16)>>>0,crcPc=crc32(x.buf);
+  const secs=(performance.now()-x.t0)/1000;
+  const sizeOk=x.got===x.size, crcOk=crcDev===crcPc;
+  espClearXfer(deviceId);
+  if(!sizeOk||!crcOk){
+    esp.lastResult={ok:false,msg:`✗ ${x.path.slice(1)}: size ${x.got}/${x.size} ${sizeOk?'ok':'BAD'} · CRC ${crcPc.toString(16).toUpperCase().padStart(8,'0')} vs ${crcHex} ${crcOk?'ok':'BAD'} — not saved`};
+    addSysLog(deviceId,`Transfer FAILED verification ${x.path}`);
+    showToast('Transfer failed verification','var(--red-text)');
+    renderDevices();return;
+  }
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([x.buf],{type:'text/csv'}));
+  a.download=x.path.replace(/^\//,'').replace(/\//g,'_');
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),10000);
+  const note=x.listedSize!==x.size?` (list said ${x.listedSize} B — refresh list)`:'';
+  esp.lastResult={ok:true,msg:`✓ ${a.download} · ${x.size} B · CRC ${crcHex} verified · ${secs.toFixed(1)} s${note}`};
+  addSysLog(deviceId,`Transfer OK ${x.path} → Downloads/${a.download} (${x.size} B, CRC ${crcHex}, ${secs.toFixed(1)} s)`);
+  showToast(`Saved ${a.download}`,'var(--green-text)');
+  renderDevices();
+}
+
+function startESPSerialReader(deviceId){
+  const esp=state.devices[deviceId].esp32,port=esp.portObj;
+  if(!port)return;
+  esp.lineBuf=[];
+  (async()=>{
+    while(esp.connected&&port.readable){
+      const reader=port.readable.getReader();
+      esp.readerRef=reader;
+      try{
+        while(true){
+          const{value,done}=await reader.read();
+          if(done)break;
+          if(value)espFeed(deviceId,value);
+        }
+      }catch(e){
+        if(esp.connected)addSysLog(deviceId,`ESP32 read error: ${e.message}`);
+      }finally{
+        try{reader.releaseLock();}catch{}
+        esp.readerRef=null;
+      }
+    }
+  })();
+}
+
+function espFeed(deviceId,bytes){
+  const esp=state.devices[deviceId].esp32;
+  let i=0;
+  while(i<bytes.length){
+    const x=esp.xfer;
+    if(x&&x.phase==='data'){ // binary mode: copy exactly x.size bytes
+      const n=Math.min(bytes.length-i,x.size-x.got);
+      x.buf.set(bytes.subarray(i,i+n),x.got);
+      x.got+=n;i+=n;x.lastRx=Date.now();
+      if(x.got>=x.size){x.phase='end';espUpdateXferStatus(deviceId,true);}
+      else espUpdateXferStatus(deviceId,false);
+      continue;
+    }
+    const b=bytes[i++];
+    if(b===10){
+      const line=new TextDecoder().decode(Uint8Array.from(esp.lineBuf)).replace(/\r$/,'');
+      esp.lineBuf=[];
+      espLine(deviceId,line);
+    }else if(esp.lineBuf.length<1024)esp.lineBuf.push(b);
+  }
+}
+
+function espLine(deviceId,line){
+  const esp=state.devices[deviceId].esp32,x=esp.xfer;
+  if(line==='<LIST>'){esp.listBuf=[];return;}
+  if(esp.listBuf&&line.startsWith('F,')){
+    const body=line.slice(2),k2=body.lastIndexOf(','),k1=body.lastIndexOf(',',k2-1);
+    esp.listBuf.push({path:body.slice(0,k1),size:parseInt(body.slice(k1+1,k2)),live:body.slice(k2+1)==='1'});
+    return;
+  }
+  if(line==='</LIST>'&&esp.listBuf){
+    esp.files=esp.listBuf.sort((a,b)=>a.path.localeCompare(b.path,undefined,{numeric:true}));
+    esp.listBuf=null;
+    const cur=esp.files.find(f=>f.path===esp.selected);
+    if(!cur||cur.live){const first=esp.files.find(f=>!f.live);esp.selected=first?first.path:'';}
+    addSysLog(deviceId,`ESP32 SD: ${esp.files.length} log files listed`);
+    renderDevices();return;
+  }
+  if(x&&x.phase==='header'&&line.startsWith('<FILE,')&&line.endsWith('>')){
+    const body=line.slice(6,-1),k=body.lastIndexOf(',');
+    x.size=parseInt(body.slice(k+1));x.buf=new Uint8Array(x.size);x.got=0;x.lastRx=Date.now();
+    x.phase=x.size>0?'data':'end';
+    addSysLog(deviceId,`Receiving ${body.slice(0,k)} (${x.size} B)`);
+    espUpdateXferStatus(deviceId,true);return;
+  }
+  if(x&&x.phase==='end'&&line.startsWith('<END,')&&line.endsWith('>')){espXferFinish(deviceId,line.slice(5,-1));return;}
+  if(line.startsWith('<ERR,')){
+    const msg=line.slice(5,-1);
+    if(x)espXferFail(deviceId,`ESP32: ${msg}`);
+    else if(msg!=='aborted'){addLog(deviceId,'RX',line,'esp32');showToast(`ESP32: ${msg}`,'var(--red-text)');}
+    return;
+  }
+  if(line==='STARTED')setTimeout(()=>espRequestList(deviceId),200); // ESP rebooted → refresh list
+  if(line.length)addLog(deviceId,'RX',line,'esp32');
+}
+
 /* ── CONFIG IMPORT/EXPORT ─────────────────────── */
 function exportConfig(){
   const cfg={version:1,exported:new Date().toISOString(),devices:state.devices.map(d=>({id:d.id,name:d.name,arduino:{port:d.arduino.port||null},esp32:{port:d.esp32.port||null}}))};
@@ -2167,9 +2391,10 @@ function renderDevice(dev){
         <button class="connect-btn ${espConn?'active':'disconnected'}" onclick="connectMicro(${dev.id},'esp32')">${espConn?'Disconnect':'Connect'}</button>
       </div>
       <div class="action-row">
-        <button class="action-btn reset" onclick="resetMicro(${dev.id},'esp32')" ${!espConn?'disabled':''}><i class="ti ti-refresh"></i> Reset (DTR/RTS)</button>
+        <button class="action-btn reset" onclick="resetMicro(${dev.id},'esp32')" ${!espConn||dev.esp32.xfer?'disabled':''}><i class="ti ti-refresh"></i> Reset (DTR/RTS)</button>
+        ${renderEspXferControls(dev)}
       </div>
-      <div style="margin-top:7px;font-size:10px;color:var(--text-faintest);line-height:1.5">Reboot only — firmware is fixed.<br>Uses hardware DTR/RTS pulse.</div>
+      <div class="xfer-status" id="esp-xfer-status-${dev.id}">${espXferStatusHtml(dev)}</div>
     </div>
     <div class="micro-panel">
       <div class="micro-label"><i class="ti ti-device-heart-monitor"></i> FED3 <span class="chip" style="background:color-mix(in srgb,var(--running-color) 15%,transparent);color:var(--running-color)">Adafruit</span></div>
